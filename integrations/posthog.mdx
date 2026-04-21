@@ -1,0 +1,86 @@
+---
+title: "PostHog"
+description: "Connect your PostHog workspace to give Oriyn access to user behavioral event data for enrichment."
+---
+
+PostHog is an open-source product analytics platform. Oriyn integrates with PostHog to read the behavioral events your product already captures — clicks, feature usage, navigation, and event sequences — and use them to generate personas, detect patterns, and surface direction recommendations.
+
+Oriyn reads from PostHog. It does not write data back, modify your events, or affect your PostHog configuration in any way.
+
+<Note>
+  The PostHog connection is org-level. Once connected, all products in your organization share the same connection — you do not need to reconnect per product.
+</Note>
+
+## Prerequisites
+
+Before connecting, make sure you have:
+
+- A PostHog account with event tracking instrumented in your product
+- Sufficient historical event data (see tip below)
+- Access to the Oriyn web app at [app.oriyn.ai](https://app.oriyn.ai)
+
+<Tip>
+  For meaningful enrichment results, Oriyn needs enough behavioral history to detect patterns. Aim for at least a few weeks of consistent event data in PostHog before running enrichment. Products with sparse or very recent data may produce less reliable persona and pattern output.
+</Tip>
+
+## Connecting PostHog
+
+<Steps>
+  <Step title="Open the Integrations page">
+    Go to [app.oriyn.ai](https://app.oriyn.ai) and navigate to **Dashboard → Integrations**.
+  </Step>
+  <Step title="Initiate the connection">
+    Click **Connect PostHog**. An OAuth flow will open in a new window.
+  </Step>
+  <Step title="Authenticate with PostHog">
+    Sign in with your PostHog credentials and authorize Oriyn to access your workspace data.
+  </Step>
+  <Step title="Verify the connection">
+    After completing the OAuth flow, the PostHog integration should appear as connected on the Integrations page. You can also verify via the API — the connection should show `"valid": true` in the response.
+  </Step>
+</Steps>
+
+## What Oriyn reads from PostHog
+
+During an enrichment run, Oriyn queries your PostHog workspace for:
+
+- **User behavioral events** — clicks, feature interactions, and navigation actions
+- **Event sequences** — the order in which users complete actions
+- **Event timing** — timestamps and session patterns
+
+Oriyn queries events from a configurable time window (set when you trigger enrichment). Only event data is accessed — Oriyn does not read user PII directly from PostHog unless it is included in your event properties.
+
+Oriyn does **not** write data to PostHog, create annotations, modify events, or change any PostHog settings.
+
+## Verifying your connection via API
+
+You can check the status of your PostHog connection at any time using the connections endpoint.
+
+```bash
+curl https://api.oriyn.ai/integrations/connections \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+[
+  {
+    "nango_connection_id": "conn_abc123",
+    "integration_id": "posthog",
+    "valid": true
+  }
+]
+```
+
+A `valid` value of `true` means Oriyn can successfully authenticate with PostHog and will use this connection during enrichment.
+
+## After connecting
+
+Once PostHog is connected, trigger an enrichment run on one of your products to generate behavioral intelligence. Oriyn will query PostHog for the event window you specify and use that data to produce personas, patterns, and direction recommendations.
+
+If you haven't set up a product yet, see the [products documentation](/products/overview) to get started.
+
+## Reconnecting
+
+If your connection becomes invalid — for example, because PostHog credentials changed or access was revoked — `valid` will return `false` in the connections list.
+
+To reconnect, go to **Dashboard → Integrations** in the Oriyn web app, remove the existing PostHog connection, and click **Connect PostHog** again to reauthenticate.

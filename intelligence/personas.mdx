@@ -1,0 +1,89 @@
+---
+title: "Personas"
+description: "AI-generated user archetypes derived from real behavioral data, so you can understand who your users actually are."
+---
+
+Oriyn analyzes your PostHog event data and surfaces 3–5 distinct user archetypes per enrichment run. Each persona describes a real behavioral segment — who they are, what they do, and roughly how large that segment is. The goal is to ground your mental model of "the user" in observed behavior rather than assumption.
+
+<Note>
+  Personas require enrichment to have run. Enrichment, in turn, requires a connected PostHog integration. If you haven't set that up yet, see [PostHog integration](/integrations/posthog).
+</Note>
+
+## What a persona contains
+
+Each persona includes:
+
+- **`name`** — an archetype name that captures the behavioral identity of the segment (e.g., "Power User", "Occasional Explorer")
+- **`description`** — a plain-language summary of who they are and what they typically do in your product
+- **`behavioral_traits`** — a list of observable, data-grounded behaviors. These are derived from actual event sequences, not inferred from demographics
+- **`size_estimate`** — an integer from 0–100 representing the estimated percentage of your user base this persona accounts for
+- **`generated_at`** — the timestamp for when this persona was generated
+
+The `size_estimate` field is a rough proportion, not a precise count. Use it to understand relative segment size, not to derive headcount.
+
+## Retrieve personas
+
+### API
+
+```bash
+curl https://api.oriyn.ai/products/{product_id}/personas \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response:**
+
+```json
+{
+  "enrichment_status": "ready",
+  "data": [
+    {
+      "id": "a3f1c2e4-88b0-4d3a-9e7f-1c2d3e4f5a6b",
+      "name": "Habitual Automator",
+      "description": "Users who set up workflows early and return regularly to monitor or extend them. Rarely need prompting — they come back because your product is embedded in their daily process.",
+      "behavioral_traits": [
+        "Creates an automation within first 3 sessions",
+        "Returns at least 4 times per week",
+        "Rarely visits onboarding or help content after week 1",
+        "Frequently uses keyboard shortcuts and bulk actions"
+      ],
+      "size_estimate": 22,
+      "generated_at": "2026-04-01T14:32:00Z"
+    },
+    {
+      "id": "b7d4e9f1-23a6-4b8c-ae12-7f3c9d2e1b0a",
+      "name": "Reluctant Evaluator",
+      "description": "Users who signed up with intent but haven't committed. They explore the product sporadically, often revisiting the same setup steps without completing them.",
+      "behavioral_traits": [
+        "Visits setup or integration pages more than 3 times without completing",
+        "Session frequency drops off after week 2",
+        "Engages with docs or tooltips heavily",
+        "Has not triggered a core action (e.g., first automation, first publish)"
+      ],
+      "size_estimate": 34,
+      "generated_at": "2026-04-01T14:32:00Z"
+    }
+  ]
+}
+```
+
+### CLI
+
+```bash
+oriyn personas --product-id <product_id>
+```
+
+Add `--json` to get the raw JSON response:
+
+```bash
+oriyn personas --product-id <product_id> --json
+```
+
+## Typical use cases
+
+**Challenging internal assumptions.** Teams often build for an imagined primary user. Personas show you what behavioral segments actually exist — including ones you didn't design for.
+
+**Prioritizing who to optimize for.** When a persona represents 40% of your user base, that's signal about where retention or activation work will have the most impact.
+
+**Shaping onboarding or messaging.** If a large segment shares the same early drop-off pattern, that's a concrete brief for onboarding improvements.
+
+Personas update each time enrichment runs. If your data or product changes significantly, re-running enrichment will reflect those shifts in the output.

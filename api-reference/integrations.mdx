@@ -1,0 +1,145 @@
+---
+title: "Integrations API"
+description: "List available data source providers and manage your active connections."
+---
+
+Integrations connect Oriyn to external data sources such as analytics platforms. You can list available providers, view your active connections, and remove connections you no longer need.
+
+## Endpoints
+
+- [List providers](#list-providers) — `GET /integrations/providers`
+- [List connections](#list-connections) — `GET /integrations/connections`
+- [Delete a connection](#delete-a-connection) — `DELETE /integrations/connections/{connection_id}`
+
+---
+
+## List providers
+
+Retrieve all available integration providers. This endpoint does not require authentication.
+
+```
+GET /integrations/providers
+```
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/integrations/providers
+```
+
+</CodeGroup>
+
+```json Response
+[
+  {
+    "id": "posthog",
+    "name": "PostHog",
+    "description": "Connect your PostHog workspace to pull behavioral event data into Oriyn enrichment."
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the provider. Use this ID when referencing a provider in other API calls (e.g., the `integration_id` query parameter when deleting a connection).
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Display name of the provider.
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Short description of what this integration provides.
+</ResponseField>
+
+---
+
+## List connections
+
+Retrieve all active integrations connections for your organization.
+
+```
+GET /integrations/connections
+```
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/integrations/connections \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+[
+  {
+    "nango_connection_id": "conn_a1b2c3d4e5f6",
+    "integration_id": "posthog",
+    "valid": true
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="nango_connection_id" type="string" required>
+  The connection identifier. Use this as the `connection_id` path parameter when deleting a connection.
+</ResponseField>
+
+<ResponseField name="integration_id" type="string" required>
+  The provider this connection belongs to (e.g., `posthog`).
+</ResponseField>
+
+<ResponseField name="valid" type="boolean" required>
+  Whether the connection is currently active and healthy. A `false` value indicates the connection has expired or was revoked and needs to be re-established.
+</ResponseField>
+
+---
+
+## Delete a connection
+
+Remove an integration connection from your organization. This does not affect data already processed by Oriyn.
+
+```
+DELETE /integrations/connections/{connection_id}
+```
+
+### Path parameters
+
+<ParamField path="connection_id" type="string" required>
+  The `nango_connection_id` of the connection to delete.
+</ParamField>
+
+### Query parameters
+
+<ParamField query="integration_id" type="string" required>
+  The provider ID for this connection (e.g., `posthog`). You can get this from [List connections](#list-connections).
+</ParamField>
+
+<Warning>
+Deleting a connection is immediate and cannot be undone. You will need to reconnect the integration through the Oriyn app if you want to restore it.
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl --request DELETE \
+  "https://api.oriyn.ai/integrations/connections/conn_a1b2c3d4e5f6?integration_id=posthog" \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "status": "deleted"
+}
+```
+
+### Response fields
+
+<ResponseField name="status" type="string" required>
+  Confirmation that the connection was deleted. Value is always `deleted`.
+</ResponseField>

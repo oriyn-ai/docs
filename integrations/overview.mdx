@@ -1,0 +1,65 @@
+---
+title: "Integrations"
+description: "Connect external data sources to power Oriyn's behavioral intelligence features."
+---
+
+Integrations are data sources that Oriyn uses to analyze real user behavior in your product. Without behavioral data, Oriyn cannot generate personas, detect patterns, or surface direction recommendations.
+
+When you connect an integration, Oriyn reads event data from that source during enrichment runs. The richer and more consistent your event data, the more accurate your behavioral intelligence output.
+
+## Available integrations
+
+<CardGroup cols={1}>
+  <Card title="PostHog" icon="chart-bar" href="/integrations/posthog">
+    Connect your PostHog workspace to let Oriyn query user behavioral events for enrichment.
+  </Card>
+</CardGroup>
+
+More integrations are coming. If you rely on a different analytics provider, [contact the Oriyn team](https://app.oriyn.ai) to discuss your needs.
+
+## Integration scope
+
+Integrations are connected at the **organization level**. A single connection applies to all products in your organization — you do not need to reconnect for each product separately.
+
+## Connecting an integration
+
+Integrations are managed through the Oriyn web app. There are no CLI commands for managing integrations.
+
+1. Open [app.oriyn.ai](https://app.oriyn.ai) and go to **Dashboard → Integrations**.
+2. Select the integration you want to connect and follow the on-screen steps.
+3. After authenticating, the connection will appear as active.
+
+## Viewing your connections
+
+Use the API to inspect the current state of your connected integrations.
+
+```bash
+curl https://api.oriyn.ai/integrations/connections \
+  -H "Authorization: Bearer <token>"
+```
+
+```json
+[
+  {
+    "nango_connection_id": "conn_abc123",
+    "integration_id": "posthog",
+    "valid": true
+  }
+]
+```
+
+The `valid` field indicates whether the connection is currently authenticated. If `valid` is `false`, the connection has expired or been revoked and you need to reconnect from the Integrations page.
+
+## Disconnecting an integration
+
+To remove a connection, send a `DELETE` request with the connection ID and integration ID:
+
+```bash
+curl -X DELETE \
+  "https://api.oriyn.ai/integrations/connections/conn_abc123?integration_id=posthog" \
+  -H "Authorization: Bearer <token>"
+```
+
+<Warning>
+  Disconnecting an integration will prevent Oriyn from fetching behavioral data during future enrichment runs. Any products that depend on this integration will fail to enrich until you reconnect.
+</Warning>

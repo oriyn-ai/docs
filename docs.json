@@ -1,0 +1,91 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Oriyn",
+  "theme": "luma",
+  "colors": {
+    "primary": "#1447e6"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/oriyn-ai"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "concepts"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
+              "products/overview",
+              "products/context",
+              "products/enrichment"
+            ]
+          },
+          {
+            "group": "Intelligence",
+            "pages": [
+              "intelligence/personas",
+              "intelligence/patterns",
+              "intelligence/direction"
+            ]
+          },
+          {
+            "group": "Experiments",
+            "pages": [
+              "experiments/overview",
+              "experiments/running",
+              "experiments/results"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/posthog"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/installation",
+              "cli/authentication",
+              "cli/commands"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api-reference/products",
+              "api-reference/enrichment",
+              "api-reference/experiments",
+              "api-reference/integrations"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

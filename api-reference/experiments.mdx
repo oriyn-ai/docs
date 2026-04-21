@@ -1,0 +1,293 @@
+---
+title: "Experiments API"
+description: "Submit product hypotheses and evaluate how your personas respond to them."
+---
+
+Experiments let you test a hypothesis against your enriched personas. You submit a hypothesis in plain language, and Oriyn evaluates it — returning a verdict, confidence score, and a per-persona breakdown.
+
+<Note>
+Enrichment must be complete before you can create experiments. Ensure `enrichment_status` is `ready` on your product first.
+</Note>
+
+## Endpoints
+
+- [List experiments](#list-experiments) — `GET /products/{id}/experiments`
+- [Create an experiment](#create-an-experiment) — `POST /products/{id}/experiments`
+- [Get an experiment](#get-an-experiment) — `GET /products/{id}/experiments/{experiment_id}`
+
+---
+
+## List experiments
+
+Retrieve all experiments for a product.
+
+```
+GET /products/{id}/experiments
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id>/experiments \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "hypothesis": "Adding a guided setup wizard will reduce onboarding drop-off by making the data connection step feel less daunting.",
+    "status": "complete",
+    "verdict": "ship",
+    "created_by_email": "maya@example.com",
+    "created_at": "2026-01-16T14:20:00Z"
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f01234567891",
+    "hypothesis": "Replacing the settings menu with a command palette will improve discoverability for all users.",
+    "status": "complete",
+    "verdict": "revise",
+    "created_by_email": "alex@example.com",
+    "created_at": "2026-01-17T09:45:00Z"
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the experiment.
+</ResponseField>
+
+<ResponseField name="hypothesis" type="string" required>
+  The hypothesis text that was submitted.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current status: `processing`, `complete`, or `failed`.
+</ResponseField>
+
+<ResponseField name="verdict" type="string">
+  The outcome: `ship`, `revise`, or `reject`. `null` while the experiment is still processing.
+</ResponseField>
+
+<ResponseField name="created_by_email" type="string" required>
+  Email of the user who created the experiment.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the experiment was created.
+</ResponseField>
+
+---
+
+## Create an experiment
+
+Submit a new hypothesis for evaluation. Oriyn evaluates the hypothesis against your product's personas and returns a verdict with reasoning.
+
+```
+POST /products/{id}/experiments
+```
+
+This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}/experiments/{experiment_id}` and check `status` until it is `complete` or `failed`.
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+### Request body
+
+<ParamField body="hypothesis" type="string" required>
+  The hypothesis to evaluate. Write it as a plain-language statement of what you believe to be true and why. The more specific, the better.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  https://api.oriyn.ai/products/<product-id>/experiments \
+  --header "Authorization: Bearer <your-token>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "hypothesis": "Adding a guided setup wizard will reduce onboarding drop-off by making the data connection step feel less daunting."
+  }'
+```
+
+</CodeGroup>
+
+```json Response — 202 Accepted
+{
+  "experiment_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+### Polling for results
+
+After creating an experiment, poll until `status` is `complete`:
+
+<CodeGroup>
+
+```bash Poll for status
+curl https://api.oriyn.ai/products/<product-id>/experiments/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json While processing
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "processing",
+  "summary": null
+}
+```
+
+```json When complete
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "complete",
+  "summary": {
+    "verdict": "ship",
+    "confidence": 0.82,
+    "summary": "The guided setup wizard hypothesis is well-supported. Power users are indifferent but not opposed, while occasional users show strong positive signals — the segment most likely to drop off.",
+    "persona_breakdown": [
+      {
+        "persona": "The Power User",
+        "response": "neutral",
+        "reasoning": "Power users will skip a wizard if given the option, but are unlikely to be deterred by its presence."
+      },
+      {
+        "persona": "The Occasional User",
+        "response": "positive",
+        "reasoning": "A guided wizard directly addresses the friction this persona experiences at the connection step."
+      }
+    ]
+  }
+}
+```
+
+<Tip>
+Poll every 2–5 seconds. Most experiments complete within 30 seconds.
+</Tip>
+
+---
+
+## Get an experiment
+
+Retrieve a single experiment by ID, including the full result when complete.
+
+```
+GET /products/{id}/experiments/{experiment_id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<ParamField path="experiment_id" type="string" required>
+  The experiment UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id>/experiments/<experiment-id> \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "product_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "hypothesis": "Adding a guided setup wizard will reduce onboarding drop-off by making the data connection step feel less daunting.",
+  "status": "complete",
+  "created_by_email": "maya@example.com",
+  "created_at": "2026-01-16T14:20:00Z",
+  "summary": {
+    "verdict": "ship",
+    "confidence": 0.82,
+    "summary": "The guided setup wizard hypothesis is well-supported across key personas.",
+    "persona_breakdown": [
+      {
+        "persona": "The Power User",
+        "response": "neutral",
+        "reasoning": "Power users will skip a wizard if given the option, but are unlikely to be deterred by its presence."
+      },
+      {
+        "persona": "The Occasional User",
+        "response": "positive",
+        "reasoning": "A guided wizard directly addresses the friction this persona experiences at the connection step."
+      }
+    ]
+  }
+}
+```
+
+### Response fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the experiment.
+</ResponseField>
+
+<ResponseField name="product_id" type="string" required>
+  ID of the product this experiment belongs to.
+</ResponseField>
+
+<ResponseField name="hypothesis" type="string" required>
+  The hypothesis that was evaluated.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current status: `processing`, `complete`, or `failed`.
+</ResponseField>
+
+<ResponseField name="created_by_email" type="string" required>
+  Email of the user who created the experiment.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the experiment was created.
+</ResponseField>
+
+<ResponseField name="summary" type="object">
+  The experiment result. `null` while `status` is `processing`.
+  <Expandable title="summary fields">
+    <ResponseField name="verdict" type="string" required>
+      Overall recommendation: `ship`, `revise`, or `reject`.
+    </ResponseField>
+    <ResponseField name="confidence" type="number" required>
+      Confidence score between `0` and `1`.
+    </ResponseField>
+    <ResponseField name="summary" type="string" required>
+      Plain-language explanation of the verdict.
+    </ResponseField>
+    <ResponseField name="persona_breakdown" type="object[]" required>
+      Per-persona evaluation results.
+      <Expandable title="persona breakdown fields">
+        <ResponseField name="persona" type="string" required>
+          Name of the persona.
+        </ResponseField>
+        <ResponseField name="response" type="string" required>
+          How this persona responded to the hypothesis: `positive`, `neutral`, or `negative`.
+        </ResponseField>
+        <ResponseField name="reasoning" type="string" required>
+          Explanation of why this persona responded this way.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>

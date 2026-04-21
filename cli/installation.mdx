@@ -1,0 +1,77 @@
+---
+title: "Installation"
+description: "Install the Oriyn CLI on macOS, Linux, or Windows to interact with the Oriyn platform from your terminal."
+---
+
+The Oriyn CLI is a binary named `oriyn`. Choose the installation method that works best for your environment.
+
+<Tabs>
+  <Tab title="Quick Install">
+    The fastest way to install `oriyn` on macOS or Linux is with the one-liner install script:
+
+    ```bash
+    curl -fsSL https://install.oriyn.ai | bash
+    ```
+
+    The script downloads the correct binary for your platform, makes it executable, and places it on your `PATH`.
+  </Tab>
+
+  <Tab title="GitHub Releases">
+    Download a prebuilt binary directly from the [Oriyn CLI releases page](https://github.com/oriyn-ai/cli/releases/latest).
+
+    **Supported platforms:**
+
+    | Platform | Architecture |
+    |---|---|
+    | macOS | Apple Silicon (aarch64) |
+    | macOS | Intel (x86\_64) |
+    | Linux | aarch64 |
+    | Linux | x86\_64 |
+    | Windows | x86\_64 |
+
+    After downloading, make the binary executable and move it onto your `PATH`:
+
+    ```bash
+    # macOS / Linux
+    chmod +x oriyn
+    mv oriyn /usr/local/bin/oriyn
+    ```
+
+    On Windows, place `oriyn.exe` in a directory that is included in your `PATH` environment variable.
+
+    <Note>
+      On macOS, if you downloaded the binary from GitHub Releases, macOS may block it from running. Open **System Preferences → Security & Privacy → General** and click **Allow Anyway** next to the blocked binary, then run your command again.
+    </Note>
+  </Tab>
+
+  <Tab title="From Source">
+    If you have [Rust](https://www.rust-lang.org/tools/install) installed, you can build and install the CLI directly from source:
+
+    ```bash
+    cargo install --git https://github.com/oriyn-ai/cli.git
+    ```
+
+    This compiles the latest version from the `main` branch and places the `oriyn` binary in `~/.cargo/bin/`, which Rust adds to your `PATH` automatically.
+  </Tab>
+</Tabs>
+
+## Verify the installation
+
+Once installed, confirm the CLI is available:
+
+```bash
+oriyn --version
+```
+
+You should see the installed version number printed to your terminal.
+
+## Global flags
+
+These flags apply to every `oriyn` command and let you point the CLI at a different environment:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--api-base <URL>` | `https://api.oriyn.ai` | Override the API base URL |
+| `--web-base <URL>` | `https://app.oriyn.ai` | Override the web app URL |
+
+These are useful if your organization uses a dedicated Oriyn environment or if you are testing against a staging instance.

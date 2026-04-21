@@ -1,0 +1,113 @@
+---
+title: 'Enrichment'
+description: 'Enrichment analyzes your PostHog behavioral data to produce user personas, behavioral patterns, and prescriptive product direction — all grounded in how your users actually behave.'
+keywords: ['enrichment', 'personas', 'behavioral analysis', 'PostHog', 'patterns']
+---
+
+Enrichment is the process that turns raw behavioral data into actionable product intelligence. When you run enrichment, Oriyn reads events from your connected PostHog workspace, interprets them through the lens of your product context, and produces a structured analysis of who your users are and what they do.
+
+## What enrichment produces
+
+After enrichment completes, your product will have:
+
+- **Personas** — distinct user archetypes derived from behavioral patterns in your data
+- **Behavioral patterns** — recurring sequences of actions that define how different user segments engage with your product
+- **Prescriptive direction** — specific, evidence-based recommendations for what to build, fix, or prioritize based on observed behavior
+
+## Before you run enrichment
+
+Two conditions must be met:
+
+<Steps>
+  <Step title="Context must be ready">
+    Your product's `context_status` must be `"ready"`. Enrichment cannot run until context synthesis has completed successfully.
+
+    Check the status by calling `GET /products/{id}` and inspecting the `context_status` field. If context isn't ready, [trigger synthesis](/products/context#trigger-context-synthesis-manually) first.
+  </Step>
+  <Step title="PostHog must be connected">
+    You must have a PostHog integration connected to your Oriyn account. Connect your PostHog workspace from the Integrations section at [app.oriyn.ai](https://app.oriyn.ai).
+  </Step>
+</Steps>
+
+<Warning>
+If `context_status` is not `"ready"`, your enrichment request will not succeed. Ensure context has completed before triggering enrichment.
+</Warning>
+
+## Trigger enrichment
+
+You can trigger enrichment from the product dashboard in [app.oriyn.ai](https://app.oriyn.ai), or via the API:
+
+```
+POST /products/{id}/enrich
+```
+
+This is a fire-and-forget operation. Oriyn accepts the request immediately and runs enrichment in the background.
+
+<CodeGroup>
+
+```bash Request
+curl -X POST https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479/enrich \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response (202 Accepted)
+{
+  "status": "processing"
+}
+```
+
+</CodeGroup>
+
+If enrichment is already running when you make this request, the API returns HTTP 409 Conflict. Wait for the current run to complete before triggering another.
+
+```json Response (409 Conflict)
+{
+  "error": "enrichment_in_progress",
+  "message": "Enrichment is already running for this product."
+}
+```
+
+## Check enrichment status
+
+Enrichment runs asynchronously. Poll `GET /products/{id}` and check `enrichment_status` to track progress.
+
+<CodeGroup>
+
+```bash Request
+curl https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "name": "Launchpad",
+  "context_status": "ready",
+  "enrichment_status": "processing",
+  "created_at": "2026-02-14T09:22:11Z"
+}
+```
+
+</CodeGroup>
+
+### Status lifecycle
+
+```
+idle → processing → ready
+                 ↘ failed
+```
+
+| Value | Meaning |
+|---|---|
+| `idle` | Enrichment has not been run yet |
+| `processing` | Enrichment is running — Oriyn is analyzing your behavioral data |
+| `ready` | Enrichment results are available |
+| `failed` | Enrichment encountered an error — you can re-trigger it |
+
+## Re-running enrichment
+
+You can re-run enrichment at any time after a previous run has completed (when `enrichment_status` is `"ready"` or `"failed"`). Each run replaces the previous results — prior personas and insights are overwritten.
+
+<Tip>
+Re-run enrichment when you've made significant changes to your product context, or when enough time has passed that your PostHog data reflects meaningfully different user behavior.
+</Tip>

@@ -1,0 +1,93 @@
+---
+title: "API overview"
+description: "Everything you need to start building with the Oriyn API — base URL, authentication, request format, async operations, and error handling."
+---
+
+The Oriyn API is a REST API that gives you programmatic access to your behavioral intelligence data. All requests go to:
+
+```
+https://api.oriyn.ai
+```
+
+All requests and responses use JSON. Include `Content-Type: application/json` on any request that sends a body.
+
+## Authentication
+
+Every endpoint (except the health check) requires a Bearer token in the `Authorization` header:
+
+```bash
+Authorization: Bearer <your-token>
+```
+
+See [Authentication](/api-reference/authentication) for details on obtaining and managing tokens.
+
+**Verify your token** by calling `GET /v1/me`:
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/v1/me \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "email": "you@example.com"
+}
+```
+
+## Async operations
+
+Several operations take time to complete. These endpoints return HTTP `202 Accepted` immediately and run in the background:
+
+| Endpoint | What it does |
+|---|---|
+| `POST /products/{id}/context` | Synthesizes product context from your URLs |
+| `POST /products/{id}/enrich` | Runs behavioral enrichment (personas, patterns, direction) |
+| `POST /products/{id}/experiments` | Evaluates a hypothesis against your personas |
+
+After receiving a `202`, poll the relevant status field to track progress:
+
+- **Context:** check `context_status` on `GET /products/{id}` — values: `idle`, `processing`, `ready`, `failed`
+- **Enrichment:** check `enrichment_status` on `GET /products/{id}` — values: `idle`, `processing`, `ready`, `failed`
+- **Experiments:** check `status` on `GET /products/{id}/experiments/{experiment_id}` — values: `processing`, `complete`, `failed`
+
+<Tip>
+Poll at a reasonable interval — every 2–5 seconds is sufficient for most operations. Avoid tight loops with no delay.
+</Tip>
+
+## Error responses
+
+All error responses use standard HTTP status codes and return a JSON body describing the problem.
+
+| Status | Meaning |
+|---|---|
+| `400 Bad Request` | Invalid input or a precondition is not met (e.g., enrichment has not been run yet) |
+| `401 Unauthorized` | Missing or invalid Bearer token |
+| `403 Forbidden` | Your token is valid but you don't have access to this resource |
+| `404 Not Found` | The resource doesn't exist or doesn't belong to your organization |
+| `409 Conflict` | The operation is already in progress (e.g., enrichment is already running) |
+| `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state |
+
+## Explore the API
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    How to obtain and use your Bearer token.
+  </Card>
+  <Card title="Products" icon="box" href="/api-reference/products">
+    Create and manage products, synthesize context.
+  </Card>
+  <Card title="Enrichment" icon="sparkles" href="/api-reference/enrichment">
+    Run enrichment and retrieve personas, patterns, and direction.
+  </Card>
+  <Card title="Experiments" icon="flask-conical" href="/api-reference/experiments">
+    Submit hypotheses and evaluate them against your personas.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/api-reference/integrations">
+    List providers and manage data source connections.
+  </Card>
+</CardGroup>

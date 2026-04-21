@@ -1,0 +1,109 @@
+---
+title: "Experiment Results"
+description: "Understand how to read verdicts, confidence scores, and per-persona breakdowns from your experiments."
+---
+
+Once an experiment completes, Oriyn returns a structured result with four parts: a verdict, a confidence score, a natural language summary, and a breakdown by persona.
+
+## Retrieve results
+
+<CodeGroup>
+```bash API
+curl https://api.oriyn.ai/products/{id}/experiments/{experiment_id} \
+  -H "Authorization: Bearer <token>"
+```
+
+```bash CLI
+oriyn experiment get --product f47ac10b-58cc-4372-a567-0e02b2c3d479 --experiment a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+</CodeGroup>
+
+<Tip>
+Use the `--json` flag with any CLI command to get machine-readable output. This is especially useful when processing results programmatically or passing them to an AI agent.
+
+```bash
+oriyn experiment get --product f47ac10b-58cc-4372-a567-0e02b2c3d479 --experiment a1b2c3d4-e5f6-7890-abcd-ef1234567890 --json
+```
+</Tip>
+
+## Example result
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "product_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "hypothesis": "Adding a bulk export feature would increase retention for power users",
+  "status": "complete",
+  "created_by_email": "you@yourcompany.com",
+  "created_at": "2026-04-05T10:00:00Z",
+  "summary": {
+    "verdict": "ship",
+    "confidence": 0.82,
+    "summary": "Power users strongly support bulk export, citing repetitive manual workflows as a recurring pain point. Casual users were indifferent — the feature doesn't affect their typical usage patterns. No persona group responded negatively.",
+    "persona_breakdown": [
+      {
+        "persona": "Power Users",
+        "response": "positive",
+        "reasoning": "Bulk export directly addresses a known friction point. These users regularly move large datasets and would benefit immediately."
+      },
+      {
+        "persona": "Casual Users",
+        "response": "neutral",
+        "reasoning": "Export functionality isn't part of their typical workflow. They neither benefit nor object to the feature being added."
+      },
+      {
+        "persona": "Administrators",
+        "response": "positive",
+        "reasoning": "Admins see value in being able to extract data for reporting purposes, even if they wouldn't use it daily."
+      }
+    ]
+  }
+}
+```
+
+## Reading the result
+
+### Verdict
+
+The verdict is Oriyn's recommendation based on the synthesized persona responses.
+
+| Verdict | Meaning |
+| --- | --- |
+| `ship` | Strong positive signal. Go ahead. |
+| `revise` | Mixed signal. Consider changes before shipping. |
+| `reject` | Negative signal. Reconsider the hypothesis entirely. |
+
+A `revise` verdict doesn't mean abandon the idea — it means the personas identified concerns worth addressing. Read the summary and persona breakdown to understand what to change.
+
+### Confidence score
+
+The confidence score (`0.0`–`1.0`) reflects how consistently your personas responded.
+
+- **High confidence (e.g., `0.85`)** — personas agreed strongly, in either direction
+- **Low confidence (e.g., `0.40`)** — opinions were split across segments
+
+Always read confidence alongside the verdict. A `ship` at `0.90` is a strong green light. A `ship` at `0.45` means proceed carefully — different segments have different views.
+
+### Summary
+
+The `summary` field is a natural language synthesis of what the personas said and why. Use it to understand the reasoning behind the verdict, not just the label.
+
+### Persona breakdown
+
+The `persona_breakdown` array lists each persona segment with:
+
+- `persona` — the name of the persona group
+- `response` — `positive`, `neutral`, or `negative`
+- `reasoning` — why that segment responded the way it did
+
+This is where you identify which user segments support a change, which don't care, and which would push back. If a high-value segment responds negatively, that's worth weighing even if the overall verdict is `ship`.
+
+## What to do next
+
+**If the verdict is `ship`:** Move forward with confidence. Check the persona breakdown to confirm your most important segments are on board.
+
+**If the verdict is `revise`:** Read the breakdown to understand what concerns exist and in which segments. Adjust your hypothesis to address those concerns and run the experiment again.
+
+**If the verdict is `reject`:** The hypothesis as stated isn't supported by your user base. Revisit your assumptions, consider a different approach, and run a new experiment with a revised hypothesis.
+
+Running multiple experiments with refined hypotheses is a normal part of the process. Each result gives you signal to sharpen your thinking.

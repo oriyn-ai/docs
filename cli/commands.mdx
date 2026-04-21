@@ -1,0 +1,236 @@
+---
+title: "Commands"
+description: "Complete reference for all Oriyn CLI commands, organized by category."
+---
+
+<Tip>
+  Most commands support a `--json` flag that outputs raw JSON instead of formatted text. Use `--json` when consuming Oriyn data in AI agents, shell scripts, or piping to tools like `jq`.
+</Tip>
+
+## Authentication
+
+### `oriyn login`
+
+Opens a browser-based OAuth flow and saves credentials to your OS keychain.
+
+```bash
+oriyn login
+```
+
+### `oriyn logout`
+
+Removes stored credentials from your OS keychain.
+
+```bash
+oriyn logout
+```
+
+### `oriyn whoami`
+
+Displays the email address and user ID of the currently authenticated user.
+
+```bash
+oriyn whoami
+oriyn whoami --json
+```
+
+---
+
+## Querying
+
+### `oriyn query`
+
+Ask a natural-language question about your behavioral data. Oriyn interprets the prompt and returns an answer drawn from your product's behavioral intelligence.
+
+```bash
+oriyn query "<prompt>"
+```
+
+**Example:**
+
+```bash
+oriyn query "Who are my power users?"
+oriyn query "What features do churned users avoid?"
+```
+
+---
+
+## Products
+
+### `oriyn products` / `oriyn products list` / `oriyn products ls`
+
+Lists all products in your Oriyn account. `list` and `ls` are aliases for the default behavior.
+
+```bash
+oriyn products
+oriyn products list
+oriyn products ls
+```
+
+### `oriyn products get`
+
+Returns details for a specific product.
+
+```bash
+oriyn products get --product-id <id>
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The ID of the product to retrieve |
+
+**Example:**
+
+```bash
+oriyn products get --product-id f47ac10b-58cc-4372-a567-0e02b2c3d479
+```
+
+---
+
+## Intelligence
+
+### `oriyn personas`
+
+Lists the behavioral personas identified for a product.
+
+```bash
+oriyn personas --product-id <id>
+oriyn personas --product-id <id> --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The product to query |
+| `--json` | Output raw JSON |
+
+### `oriyn patterns`
+
+Lists the behavioral patterns detected for a product.
+
+```bash
+oriyn patterns --product-id <id>
+oriyn patterns --product-id <id> --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The product to query |
+| `--json` | Output raw JSON |
+
+### `oriyn direction`
+
+Returns prescriptive product direction derived from behavioral intelligence.
+
+```bash
+oriyn direction --product-id <id>
+oriyn direction --product-id <id> --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The product to query |
+| `--json` | Output raw JSON |
+
+---
+
+## Lifecycle
+
+### `oriyn synthesize`
+
+Triggers a context synthesis run for a product. Use this to re-synthesize the product's structured context — for example, after you've updated its description or URLs in the dashboard.
+
+```bash
+oriyn synthesize --product-id <id>
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The product to synthesize |
+
+### `oriyn enrich`
+
+Triggers a behavioral enrichment run for a product.
+
+```bash
+oriyn enrich --product-id <id>
+```
+
+| Flag | Description |
+|---|---|
+| `--product-id <id>` | The product to enrich |
+
+---
+
+## Experiments
+
+### `oriyn experiment run`
+
+Runs a hypothesis experiment against a product's behavioral data. The command polls automatically until the experiment completes and then prints the results.
+
+```bash
+oriyn experiment run --product <id> --hypothesis "<text>"
+oriyn experiment run --product <id> --hypothesis "<text>" --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product <id>` | The product to run the experiment against |
+| `--hypothesis <text>` | The hypothesis to test |
+| `--json` | Output raw JSON when complete |
+
+**Example:**
+
+```bash
+oriyn experiment run \
+  --product f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  --hypothesis "Power users engage more on weekday mornings"
+```
+
+### `oriyn experiment list`
+
+Lists all experiments for a product.
+
+```bash
+oriyn experiment list --product <id>
+oriyn experiment list --product <id> --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product <id>` | The product to list experiments for |
+| `--json` | Output raw JSON |
+
+### `oriyn experiment get`
+
+Returns the results of a specific experiment.
+
+```bash
+oriyn experiment get --product <id> --experiment <id>
+oriyn experiment get --product <id> --experiment <id> --json
+```
+
+| Flag | Description |
+|---|---|
+| `--product <id>` | The product the experiment belongs to |
+| `--experiment <id>` | The experiment ID to retrieve |
+| `--json` | Output raw JSON |
+
+---
+
+## Settings
+
+### `oriyn telemetry`
+
+Manages anonymous usage telemetry that helps improve the CLI. Telemetry is opt-in and never includes your product data.
+
+```bash
+oriyn telemetry --status
+oriyn telemetry --enable
+oriyn telemetry --disable
+```
+
+| Flag | Description |
+|---|---|
+| `--status` | Show whether telemetry is currently enabled |
+| `--enable` | Enable anonymous usage telemetry |
+| `--disable` | Disable anonymous usage telemetry |

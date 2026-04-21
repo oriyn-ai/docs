@@ -1,0 +1,98 @@
+---
+title: "Quick Start"
+description: "Set up Oriyn, connect your analytics, and run your first query in minutes."
+---
+
+This guide walks you through creating your first product, connecting PostHog, and querying your user intelligence.
+
+<Steps>
+  <Step title="Sign up">
+    Go to [app.oriyn.ai](https://app.oriyn.ai) and create your account. After signing in, you'll land on the dashboard where you can create your first product.
+  </Step>
+
+  <Step title="Create a product">
+    Select **New product** from the dashboard. Give your product a name, an optional description, and any relevant URLs — your marketing site, app, or documentation. Oriyn uses this information to build an initial structured understanding of what your product does and who it serves.
+
+    The more context you provide upfront, the more accurate the initial synthesis will be. You can update these fields at any time.
+
+    <Note>
+      After you save your product, Oriyn automatically runs context synthesis in the background. This produces a structured summary covering your product's core features, target users, and value proposition. It typically completes within a minute.
+    </Note>
+  </Step>
+
+  <Step title="Connect PostHog">
+    Navigate to **Integrations** in your product settings and select **PostHog**. Oriyn uses OAuth to connect to your PostHog account — click **Connect** and follow the authorization flow. No API keys to manage manually.
+
+    Once connected, Oriyn has access to your PostHog event data and can use it to power enrichment.
+  </Step>
+
+  <Step title="Run enrichment and explore your intelligence">
+    With PostHog connected, trigger enrichment from your product's **Enrichment** tab. Oriyn reads your behavioral event data and generates:
+
+    - **Personas** — AI-generated user archetypes with behavioral traits and estimated share of your user base
+    - **Patterns** — Behavioral sequences derived from real event flows
+    - **Direction** — Prioritized recommendations grounded in what your data signals
+
+    Enrichment typically takes a few minutes depending on data volume. When `enrichment_status` reaches `ready`, your intelligence is available.
+  </Step>
+
+  <Step title="Query your users">
+    You can ask Oriyn questions in plain language — from the dashboard, the API, or the CLI.
+
+    **Install the CLI:**
+
+    ```bash
+    curl -fsSL https://install.oriyn.ai | bash
+    ```
+
+    **Authenticate:**
+
+    ```bash
+    oriyn login
+    ```
+
+    **Run your first query:**
+
+    ```bash
+    oriyn query "Who are my power users?"
+    ```
+
+    You can also call the query endpoint directly from your own code or pipelines:
+
+    <CodeGroup>
+
+    ```bash cURL
+    curl -X POST https://api.oriyn.ai/v1/query \
+      -H "Authorization: Bearer <your-token>" \
+      -H "Content-Type: application/json" \
+      -d '{"prompt": "Who are my power users?"}'
+    ```
+
+    ```json Response
+    {
+      "answer": "Your power users are primarily in the 'Builder' persona — engineers and technical leads who log in daily, use the API directly, and have created more than 5 products. They represent approximately 18% of your active user base."
+    }
+    ```
+
+    </CodeGroup>
+
+    To get your Bearer token for direct API calls, log in at [app.oriyn.ai](https://app.oriyn.ai) or run `oriyn login` with the CLI. See [Authentication](/api-reference/authentication) for details.
+  </Step>
+</Steps>
+
+## What's next
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book-open" href="/concepts">
+    Understand how products, personas, patterns, direction, and experiments work together.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/overview">
+    Full reference for every endpoint.
+  </Card>
+  <Card title="Experiments" icon="flask" href="/experiments/overview">
+    Test a hypothesis against your user personas before you ship.
+  </Card>
+  <Card title="CLI" icon="terminal" href="/cli/commands">
+    All available CLI commands and options.
+  </Card>
+</CardGroup>

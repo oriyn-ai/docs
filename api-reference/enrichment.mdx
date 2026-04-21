@@ -1,0 +1,330 @@
+---
+title: "Enrichment API"
+description: "Trigger behavioral enrichment and retrieve personas, behavioral patterns, and strategic direction for your product."
+---
+
+Enrichment is the process that reads your PostHog behavioral event data and generates intelligence about your users. Once enrichment is complete, you can retrieve three types of output: **personas**, **patterns**, and **direction**.
+
+<Note>
+Two preconditions must be met before running enrichment: the product's `context_status` must be `ready`, and a PostHog integration must be connected to your organization. If context is not ready, the request returns `400 Bad Request`.
+</Note>
+
+## Endpoints
+
+- [Trigger enrichment](#trigger-enrichment) — `POST /products/{id}/enrich`
+- [Get personas](#get-personas) — `GET /products/{id}/personas`
+- [Get patterns](#get-patterns) — `GET /products/{id}/patterns`
+- [Get direction](#get-direction) — `GET /products/{id}/direction`
+
+---
+
+## Trigger enrichment
+
+Start the enrichment process for a product. Oriyn reads your PostHog behavioral event data and generates personas, behavioral patterns, and strategic direction.
+
+```
+POST /products/{id}/enrich
+```
+
+This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}` and check `enrichment_status` until it is `ready` or `failed`.
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<Warning>
+If enrichment is already running, the endpoint returns `409 Conflict`. If context is not ready, it returns `400 Bad Request`. Ensure `context_status` is `ready` before triggering enrichment.
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  https://api.oriyn.ai/products/<product-id>/enrich \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response — 202 Accepted
+{
+  "status": "processing"
+}
+```
+
+Poll for completion:
+
+<CodeGroup>
+
+```bash Poll enrichment status
+curl https://api.oriyn.ai/products/<product-id> \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Product when enrichment is ready
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "enrichment_status": "ready"
+}
+```
+
+Once `enrichment_status` is `ready`, you can retrieve personas, patterns, and direction.
+
+---
+
+## Get personas
+
+Retrieve the behavioral personas generated for a product.
+
+```
+GET /products/{id}/personas
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id>/personas \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "enrichment_status": "ready",
+  "data": [
+    {
+      "id": "c1d2e3f4-a5b6-7890-cdef-123456789abc",
+      "name": "The Power User",
+      "description": "A technically proficient user who adopts features early and optimizes workflows aggressively.",
+      "behavioral_traits": [
+        "Uses keyboard shortcuts extensively",
+        "Reads release notes",
+        "Explores settings and advanced features unprompted"
+      ],
+      "size_estimate": 35,
+      "generated_at": "2026-01-15T10:00:00Z"
+    },
+    {
+      "id": "d2e3f4a5-b6c7-8901-defa-234567890bcd",
+      "name": "The Occasional User",
+      "description": "Logs in infrequently and relies on familiar, well-established workflows.",
+      "behavioral_traits": [
+        "Returns to the same entry points repeatedly",
+        "Rarely explores new features independently",
+        "Needs clear visual affordances"
+      ],
+      "size_estimate": 42,
+      "generated_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Response fields
+
+<ResponseField name="enrichment_status" type="string" required>
+  Current enrichment status for the product.
+</ResponseField>
+
+<ResponseField name="data" type="object[]" required>
+  Array of persona objects.
+  <Expandable title="persona fields">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the persona.
+    </ResponseField>
+    <ResponseField name="name" type="string" required>
+      Short name for the persona.
+    </ResponseField>
+    <ResponseField name="description" type="string" required>
+      Narrative description of who this persona is and how they behave.
+    </ResponseField>
+    <ResponseField name="behavioral_traits" type="string[]" required>
+      List of specific behavioral characteristics observed for this persona.
+    </ResponseField>
+    <ResponseField name="size_estimate" type="number" required>
+      Estimated percentage of your user base this persona represents.
+    </ResponseField>
+    <ResponseField name="generated_at" type="string" required>
+      ISO 8601 timestamp of when this persona was generated.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get patterns
+
+Retrieve the behavioral patterns identified for a product.
+
+```
+GET /products/{id}/patterns
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id>/patterns \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "enrichment_status": "ready",
+  "data": [
+    {
+      "id": "e3f4a5b6-c7d8-9012-efab-345678901cde",
+      "title": "Onboarding drop-off at step 3",
+      "description": "A significant portion of new users abandon the setup flow at the third step, which requires connecting an external data source.",
+      "frequency": "high",
+      "significance": "high",
+      "raw_sequence": [
+        "user_signed_up",
+        "completed_step_1",
+        "completed_step_2",
+        "abandoned_step_3"
+      ],
+      "generated_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Response fields
+
+<ResponseField name="enrichment_status" type="string" required>
+  Current enrichment status for the product.
+</ResponseField>
+
+<ResponseField name="data" type="object[]" required>
+  Array of pattern objects.
+  <Expandable title="pattern fields">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the pattern.
+    </ResponseField>
+    <ResponseField name="title" type="string" required>
+      Short title describing the pattern.
+    </ResponseField>
+    <ResponseField name="description" type="string" required>
+      Detailed explanation of the pattern and its context.
+    </ResponseField>
+    <ResponseField name="frequency" type="string" required>
+      How often this pattern is observed. Qualitative descriptor such as `high`, `medium`, or `low`.
+    </ResponseField>
+    <ResponseField name="significance" type="string" required>
+      How significant this pattern is to product outcomes. Qualitative descriptor such as `high`, `medium`, or `low`.
+    </ResponseField>
+    <ResponseField name="raw_sequence" type="string[]" required>
+      The raw event sequence that defines this pattern.
+    </ResponseField>
+    <ResponseField name="generated_at" type="string" required>
+      ISO 8601 timestamp of when this pattern was generated.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get direction
+
+Retrieve strategic recommendations derived from enrichment.
+
+```
+GET /products/{id}/direction
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id>/direction \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "enrichment_status": "ready",
+  "data": [
+    {
+      "id": "f4a5b6c7-d8e9-0123-fabc-456789012def",
+      "recommendations": [
+        {
+          "title": "Simplify the data source connection step",
+          "rationale": "The onboarding drop-off pattern indicates users struggle with the external connection requirement. Offering a demo mode or deferred setup could reduce abandonment.",
+          "priority": "high"
+        },
+        {
+          "title": "Surface keyboard shortcuts to power users",
+          "rationale": "Power users actively seek efficiency features but may not discover shortcuts without prompting. An onboarding nudge could improve retention in this segment.",
+          "priority": "medium"
+        }
+      ],
+      "derived_from": [
+        "Onboarding drop-off pattern at step 3",
+        "The Power User persona — behavioral_traits"
+      ],
+      "generated_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Response fields
+
+<ResponseField name="enrichment_status" type="string" required>
+  Current enrichment status for the product.
+</ResponseField>
+
+<ResponseField name="data" type="object[]" required>
+  Array of direction objects.
+  <Expandable title="direction fields">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for this direction entry.
+    </ResponseField>
+    <ResponseField name="recommendations" type="object[]" required>
+      List of strategic recommendations.
+      <Expandable title="recommendation fields">
+        <ResponseField name="title" type="string" required>
+          Short title for the recommendation.
+        </ResponseField>
+        <ResponseField name="rationale" type="string" required>
+          Explanation of why this recommendation is relevant, grounded in the enrichment data.
+        </ResponseField>
+        <ResponseField name="priority" type="string" required>
+          Priority level: `high`, `medium`, or `low`.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="derived_from" type="string[]" required>
+      List of behavioral signals (patterns, persona traits, event sequences) that informed these recommendations.
+    </ResponseField>
+    <ResponseField name="generated_at" type="string" required>
+      ISO 8601 timestamp of when this direction was generated.
+    </ResponseField>
+  </Expandable>
+</ResponseField>

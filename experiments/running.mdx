@@ -1,0 +1,133 @@
+---
+title: "Running Experiments"
+description: "Write a hypothesis and run it against your product's personas via the dashboard, API, or CLI."
+---
+
+## Write a good hypothesis
+
+Your hypothesis is the input Oriyn uses to simulate persona responses. A well-formed hypothesis produces a more useful result.
+
+**Be specific and testable.** State one concrete change and what effect you expect it to have.
+
+| | Example |
+| --- | --- |
+| Good | `"Adding a bulk export feature would increase retention for power users"` |
+| Bad | `"What if we redesign the dashboard?"` |
+
+A good hypothesis:
+- Describes a single, specific change
+- States an expected outcome
+- Targets a concrete user group when relevant
+
+Vague or open-ended questions don't give Oriyn enough to evaluate — they'll produce low-confidence results.
+
+## Run via the dashboard
+
+Navigate to your product in the Oriyn dashboard and open the **Experiments** tab. Enter your hypothesis and click **Run experiment**. Results appear on the same page once processing completes.
+
+## Run via the API
+
+Send a `POST` request to create an experiment. The response returns immediately with an `experiment_id` you use to poll for results.
+
+<Note>
+Experiments are processed asynchronously. The API returns HTTP 202 immediately, and results are typically ready within 30–60 seconds. Poll the experiment endpoint to check when processing is complete.
+</Note>
+
+### Create an experiment
+
+```bash
+curl -X POST https://api.oriyn.ai/products/<product-id>/experiments \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"hypothesis": "Adding a bulk export feature would increase retention for power users"}'
+```
+
+**Response (HTTP 202):**
+
+```json
+{
+  "experiment_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+### Poll for results
+
+Check the `status` field on the experiment. While `status` is `"processing"`, the `summary` field is `null`. Once `status` is `"complete"`, the full result is available.
+
+```bash
+curl https://api.oriyn.ai/products/<product-id>/experiments/<experiment-id> \
+  -H "Authorization: Bearer <token>"
+```
+
+### Complete example
+
+<Steps>
+  <Step title="Create the experiment">
+    ```bash
+    curl -X POST https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479/experiments \
+      -H "Authorization: Bearer <token>" \
+      -H "Content-Type: application/json" \
+      -d '{"hypothesis": "Adding a bulk export feature would increase retention for power users"}'
+    ```
+
+    ```json
+    {
+      "experiment_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    }
+    ```
+  </Step>
+  <Step title="Poll until complete">
+    ```bash
+    curl https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479/experiments/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+      -H "Authorization: Bearer <token>"
+    ```
+
+    While processing, you'll see:
+
+    ```json
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "product_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "hypothesis": "Adding a bulk export feature would increase retention for power users",
+      "status": "processing",
+      "created_by_email": "you@yourcompany.com",
+      "created_at": "2026-04-05T10:00:00Z",
+      "summary": null
+    }
+    ```
+  </Step>
+  <Step title="Read the result">
+    Once `status` is `"complete"`, the `summary` field is populated with the verdict, confidence score, and persona breakdown. See [Reading Results](/experiments/results) for how to interpret the output.
+  </Step>
+</Steps>
+
+## Run via the CLI
+
+Use `oriyn experiment run` with your product ID and hypothesis. The CLI polls automatically and prints results when they're ready — you don't need to poll manually.
+
+```bash
+oriyn experiment run \
+  --product f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  --hypothesis "Adding a bulk export feature would increase retention for power users"
+```
+
+### Other CLI commands
+
+```bash
+# List all experiments for a product
+oriyn experiment list --product f47ac10b-58cc-4372-a567-0e02b2c3d479
+
+# Get a specific experiment by ID
+oriyn experiment get --product f47ac10b-58cc-4372-a567-0e02b2c3d479 --experiment a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+### Machine-readable output
+
+Add `--json` to any CLI command for structured output. This is useful when piping results to other tools or running experiments from automated workflows.
+
+```bash
+oriyn experiment run \
+  --product f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  --hypothesis "Adding a bulk export feature would increase retention for power users" \
+  --json
+```

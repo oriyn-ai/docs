@@ -1,0 +1,255 @@
+---
+title: "Products API"
+description: "List and retrieve products, synthesize context from your URLs, or supply context manually."
+---
+
+Products are the top-level resource in Oriyn. Each product has a context that describes what it does — this context powers enrichment, personas, and experiments.
+
+## Endpoints
+
+- [List products](#list-products) — `GET /products`
+- [Get a product](#get-a-product) — `GET /products/{id}`
+- [Synthesize context](#synthesize-context) — `POST /products/{id}/context`
+- [Update context manually](#update-context-manually) — `PATCH /products/{id}/context`
+
+---
+
+## List products
+
+Retrieve all products in your organization.
+
+```
+GET /products
+```
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+[
+  {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "name": "Oriyn Dashboard",
+    "context_status": "ready"
+  },
+  {
+    "id": "b3d8f1a2-44e5-4c6d-9f12-7a3e5b8c9d01",
+    "name": "Mobile App",
+    "context_status": "idle"
+  }
+]
+```
+
+### Response fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the product.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Display name of the product.
+</ResponseField>
+
+<ResponseField name="context_status" type="string" required>
+  Current status of the product's context. One of `idle`, `processing`, `ready`, or `failed`.
+</ResponseField>
+
+---
+
+## Get a product
+
+Retrieve a single product by ID, including its full context and enrichment status.
+
+```
+GET /products/{id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/products/<product-id> \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "name": "Oriyn Dashboard",
+  "description": "Behavioral intelligence platform for product teams.",
+  "urls": [
+    "https://oriyn.ai",
+    "https://app.oriyn.ai"
+  ],
+  "context": {
+    "company": "Oriyn",
+    "product_summary": "Oriyn is a behavioral intelligence platform for product teams.",
+    "core_features": ["Behavioral enrichment", "Persona generation", "Hypothesis experiments"],
+    "target_users": "Product managers and engineers at software companies",
+    "value_proposition": "Turn behavioral data into actionable product direction",
+    "use_cases": ["Identifying user segments", "Validating hypotheses before shipping", "Prioritizing the roadmap"]
+  },
+  "context_status": "ready",
+  "enrichment_status": "ready",
+  "created_at": "2026-01-15T09:30:00Z"
+}
+```
+
+### Response fields
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the product.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Display name of the product.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Optional description of the product. `null` if not set.
+</ResponseField>
+
+<ResponseField name="urls" type="string[]">
+  URLs associated with this product, used for context synthesis. `null` if none are configured.
+</ResponseField>
+
+<ResponseField name="context" type="object">
+  The product's context object. `null` until context has been synthesized or set manually. Shape depends on what was synthesized or provided.
+</ResponseField>
+
+<ResponseField name="context_status" type="string" required>
+  Status of context synthesis. One of `idle`, `processing`, `ready`, or `failed`.
+</ResponseField>
+
+<ResponseField name="enrichment_status" type="string" required>
+  Status of behavioral enrichment. One of `idle`, `processing`, `ready`, or `failed`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the product was created.
+</ResponseField>
+
+---
+
+## Synthesize context
+
+Trigger automatic context synthesis for a product. Oriyn reads the product's associated URLs and builds a context object that powers enrichment.
+
+```
+POST /products/{id}/context
+```
+
+This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}` and check `context_status` until it is `ready` or `failed`.
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<Warning>
+If context synthesis is already running for this product, the endpoint returns `409 Conflict`. Wait for the current operation to complete before triggering another.
+</Warning>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST \
+  https://api.oriyn.ai/products/<product-id>/context \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response — 202 Accepted
+{
+  "status": "processing"
+}
+```
+
+After receiving `202`, poll the product to track progress:
+
+<CodeGroup>
+
+```bash Poll for status
+curl https://api.oriyn.ai/products/<product-id> \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Product when ready
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "context_status": "ready",
+  "context": {
+    "company": "Oriyn",
+    "product_summary": "Oriyn is a behavioral intelligence platform for product teams.",
+    "core_features": ["Behavioral enrichment", "Persona generation", "Hypothesis experiments"],
+    "target_users": "Product managers and engineers at software companies",
+    "value_proposition": "Turn behavioral data into actionable product direction",
+    "use_cases": ["Identifying user segments", "Validating hypotheses before shipping", "Prioritizing the roadmap"]
+  }
+}
+```
+
+---
+
+## Update context manually
+
+Replace or set the product's context with your own JSON object. Use this when you want to provide context directly rather than having Oriyn synthesize it from URLs.
+
+```
+PATCH /products/{id}/context
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+### Request body
+
+<ParamField body="(any)" type="object" required>
+  A valid JSON object. This replaces the product's context. For best enrichment results, use the same structure that context synthesis produces: `company`, `product_summary`, `core_features`, `target_users`, `value_proposition`, and `use_cases`.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl --request PATCH \
+  https://api.oriyn.ai/products/<product-id>/context \
+  --header "Authorization: Bearer <your-token>" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "summary": "A project management tool for distributed engineering teams.",
+    "audience": "Software engineers and engineering managers",
+    "core_features": ["task tracking", "sprint planning", "retrospectives"]
+  }'
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "summary": "A project management tool for distributed engineering teams.",
+  "audience": "Software engineers and engineering managers",
+  "core_features": ["task tracking", "sprint planning", "retrospectives"]
+}
+```
+
+The response is the updated context object exactly as you provided it.

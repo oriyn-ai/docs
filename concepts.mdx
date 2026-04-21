@@ -1,0 +1,121 @@
+---
+title: "Core Concepts"
+description: "The key concepts behind Oriyn: products, context, enrichment, personas, patterns, direction, experiments, and integrations."
+---
+
+Understanding how Oriyn's pieces fit together makes it easier to use effectively. This page covers each concept and how they relate to one another.
+
+## Products
+
+A product is the central object in Oriyn. It represents the thing your users interact with — your app, API, platform, or tool. Oriyn builds all of its intelligence around a product.
+
+When you create a product, you provide a name, an optional description, and optional URLs. Oriyn uses these to begin understanding what the product does.
+
+Every product tracks two status fields:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `context_status` | `idle` / `processing` / `ready` / `failed` | Whether context synthesis has completed |
+| `enrichment_status` | `idle` / `processing` / `ready` / `failed` | Whether behavioral enrichment has completed |
+
+Both start as `idle` and move through `processing` before settling at `ready` or `failed`. You can poll these fields to know when intelligence is available.
+
+## Context
+
+Context is Oriyn's structured understanding of what your product is. It's synthesized automatically when you create a product, using the name, description, and URLs you provide.
+
+A product's context includes:
+
+- **Company** — The organization behind the product
+- **Product summary** — A concise description of what the product does
+- **Core features** — The primary capabilities the product offers
+- **Target users** — Who the product is built for
+- **Value proposition** — The core problem it solves
+- **Use cases** — Common ways users engage with it
+
+Context feeds into everything else — it's how Oriyn knows what behavioral signals matter and how to interpret them.
+
+<Info>
+  Context synthesis runs automatically after you create or update a product. You don't need to trigger it manually. Check `context_status` to know when it's done.
+</Info>
+
+## Enrichment
+
+Enrichment is the process of analyzing your PostHog behavioral data to generate intelligence. When you trigger enrichment, Oriyn reads your event data and produces three outputs: personas, patterns, and direction.
+
+Enrichment requires a connected PostHog integration. Without behavioral data, Oriyn has nothing to analyze.
+
+Track progress via `enrichment_status` on the product. Once it reaches `ready`, all three intelligence outputs are available.
+
+<Note>
+  Enrichment can be re-run at any time. Re-running updates your personas, patterns, and direction based on the latest data from PostHog.
+</Note>
+
+## Personas
+
+A persona is an AI-generated user archetype derived from your real behavioral data. Personas represent distinct types of users — not invented marketing profiles, but patterns that emerged from how people actually use your product.
+
+Each persona includes:
+
+- **Name** — A descriptive label for the archetype (e.g., "The Builder", "The Evaluator")
+- **Description** — A summary of who this user is and what they care about
+- **Behavioral traits** — Specific behaviors that characterize this group
+- **Size estimate** — The approximate percentage of your user base this persona represents
+
+The `size_estimate` field lets you understand relative scale. A persona with a `size_estimate` of `18%` represents roughly 18% of your active users — useful for prioritization.
+
+## Patterns
+
+A pattern is a behavioral sequence derived from your real event data. Patterns describe how users actually move through your product — what they do, in what order, and how often.
+
+Each pattern includes:
+
+- **Title** — A short name for the sequence
+- **Description** — What the pattern represents and why it matters
+- **Frequency** — How often this sequence occurs in your user base
+- **Significance** — Why this pattern is worth paying attention to
+- **Raw sequence** — The ordered list of events that make up the pattern
+
+Patterns are distinct from funnels. They're discovered from your data rather than defined upfront — Oriyn finds sequences you may not have known to look for.
+
+## Direction
+
+Direction is Oriyn's prescriptive output: prioritized recommendations grounded in behavioral evidence. Each piece of direction tells you something specific you should consider doing, and why your data suggests it.
+
+Each direction item includes:
+
+- **Title** — A clear statement of the recommendation
+- **Rationale** — The behavioral evidence behind it
+- **Priority** — `high`, `medium`, or `low` based on signal strength and potential impact
+- **Derived from** — The signals (personas, patterns, events) that led to this recommendation
+
+<Tip>
+  Use `priority: high` items as inputs to your sprint planning or roadmap review. They represent the strongest signals in your current behavioral data.
+</Tip>
+
+## Experiments
+
+An experiment lets you test a hypothesis against your user personas before you build anything. You describe a change — a feature, a flow, a pricing model — and Oriyn simulates how your users would respond.
+
+Oriyn runs the simulation using 50 AI agents, each embodying one of your personas. The result is a verdict with supporting evidence:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `verdict` | `ship` / `revise` / `reject` | Whether to proceed, adjust, or abandon |
+| `confidence` | `0` to `1` | How strongly the simulation supports the verdict |
+| `summary` | string | A plain-language explanation of the result |
+| `persona_breakdown` | object | How each persona responded to the hypothesis |
+
+A `ship` verdict with high confidence means your personas responded positively and consistently. A `revise` verdict means there's signal worth building on but meaningful friction or resistance from at least one persona segment.
+
+<Info>
+  Experiments are simulations, not real user tests. They're most useful for early-stage validation and reducing the cost of building the wrong thing — not as a replacement for user research.
+</Info>
+
+## Integrations
+
+Integrations are the data sources that power Oriyn's enrichment. Without behavioral data, Oriyn can synthesize context from your product description, but it cannot generate personas, patterns, or direction.
+
+**PostHog** is currently the supported integration. Connect it via OAuth through your product's Integrations settings. Once connected, Oriyn reads your PostHog event data during enrichment.
+
+Additional integrations are planned. See [Integrations](/integrations/overview) for current status and connection instructions.

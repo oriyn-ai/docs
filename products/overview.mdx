@@ -1,0 +1,129 @@
+---
+title: 'Products'
+description: 'A Product is the core entity in Oriyn — the thing Oriyn builds behavioral intelligence around. Every analysis, persona, and insight is scoped to a product you define.'
+keywords: ['products', 'overview', 'context', 'enrichment', 'status']
+---
+
+A Product in Oriyn represents the software you want to understand. When you connect your PostHog data and run enrichment, Oriyn attributes behavioral signals to the product you've defined — giving you personas, patterns, and direction that are grounded in what your users actually do.
+
+## Create a product
+
+Products are created through the Oriyn web app during onboarding at [app.oriyn.ai](https://app.oriyn.ai). You can create additional products at any time.
+
+When creating a product, you provide:
+
+- **Name** (required) — the name of your product
+- **Description** (optional) — a short summary of what your product does
+- **URLs** (optional) — links Oriyn uses to research your product (e.g. your marketing site, docs, or changelog)
+
+<Tip>
+Adding URLs gives Oriyn more signal to work with when synthesizing context. The more accurately your context reflects your product, the better your enrichment results.
+</Tip>
+
+## What happens after creation
+
+Once you create a product, Oriyn automatically kicks off context synthesis. This runs in the background and populates the context object with a structured understanding of your product — its features, target users, value proposition, and more.
+
+You don't need to do anything to trigger this. When `context_status` reaches `"ready"`, your product is eligible for behavioral enrichment.
+
+See [Product Context](/products/context) for details on what context contains and how to update it.
+
+## Product statuses
+
+Each product tracks two independent statuses: one for context synthesis and one for enrichment.
+
+### `context_status`
+
+| Value | Meaning |
+|---|---|
+| `idle` | Context synthesis has not been triggered yet |
+| `processing` | Synthesis is running — Oriyn is analyzing your product details and URLs |
+| `ready` | Context is available and up to date |
+| `failed` | Synthesis encountered an error — you can retry or update context manually |
+
+### `enrichment_status`
+
+| Value | Meaning |
+|---|---|
+| `idle` | Enrichment has not been run yet |
+| `processing` | Enrichment is running — Oriyn is analyzing your PostHog behavioral data |
+| `ready` | Enrichment results are available |
+| `failed` | Enrichment encountered an error — you can re-trigger it |
+
+<Info>
+Enrichment requires `context_status` to be `"ready"` before it can run. If context hasn't completed, triggering enrichment will not work.
+</Info>
+
+## API reference
+
+### List all products
+
+Retrieve all products in your organization.
+
+<CodeGroup>
+
+```bash Request
+curl https://api.oriyn.ai/products \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response
+[
+  {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "name": "Launchpad",
+    "context_status": "ready"
+  },
+  {
+    "id": "b3d8f1a2-44e5-4c6d-9f12-7a3e5b8c9d01",
+    "name": "Analytics Suite",
+    "context_status": "processing"
+  }
+]
+```
+
+</CodeGroup>
+
+### Get a product
+
+Retrieve full details for a single product, including its context and both status fields.
+
+<CodeGroup>
+
+```bash Request
+curl https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479 \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "name": "Launchpad",
+  "description": "A self-serve onboarding tool for B2B SaaS teams.",
+  "urls": [
+    "https://www.example.com",
+    "https://docs.example.com"
+  ],
+  "context": {
+    "company": "Example Inc.",
+    "product_summary": "Launchpad helps B2B SaaS teams automate and personalize onboarding flows.",
+    "core_features": [
+      "Checklist-based onboarding",
+      "In-app tooltips and walkthroughs",
+      "Segment-based messaging"
+    ],
+    "target_users": "Product managers and growth teams at early-stage SaaS companies",
+    "value_proposition": "Reduce time-to-value for new users without engineering support",
+    "use_cases": [
+      "Onboarding new signups to core features",
+      "Re-engaging churned or inactive users",
+      "Driving activation for specific user segments"
+    ]
+  },
+  "context_status": "ready",
+  "enrichment_status": "idle",
+  "created_at": "2026-02-14T09:22:11Z"
+}
+```
+
+</CodeGroup>

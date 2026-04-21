@@ -1,0 +1,133 @@
+---
+title: 'Product context'
+description: 'Product context is a structured summary of what your product does. Oriyn uses it as the foundation for all behavioral analysis and enrichment.'
+keywords: ['context', 'synthesis', 'product context', 'AI', 'update context']
+---
+
+Product context is Oriyn's structured understanding of your product — who it's for, what it does, and why it matters. Every enrichment run uses context to interpret behavioral signals from your users. Accurate context leads to more relevant personas and sharper insights.
+
+## What context contains
+
+The context object has six fields:
+
+| Field | Description |
+|---|---|
+| `company` | The company or team that owns the product |
+| `product_summary` | A short description of what the product does |
+| `core_features` | A list of the product's main capabilities |
+| `target_users` | A description of the intended user base |
+| `value_proposition` | The core benefit the product delivers to users |
+| `use_cases` | Specific scenarios in which users get value from the product |
+
+## How context is generated
+
+When you create a product, Oriyn automatically synthesizes context using the name, description, and URLs you provided. This runs in the background — you don't need to trigger it manually.
+
+Oriyn fetches and analyzes the content at your URLs (such as your marketing site, documentation, or changelog) and produces a context object that reflects what your product does and who it serves.
+
+<Note>
+Context synthesis is asynchronous. Check `context_status` on the product to know when it has completed.
+</Note>
+
+### Status lifecycle
+
+```
+idle → processing → ready
+                 ↘ failed
+```
+
+- **idle** — synthesis has not started yet
+- **processing** — Oriyn is actively synthesizing context
+- **ready** — context is populated and available for enrichment
+- **failed** — synthesis could not complete; you can retry or update context manually
+
+## Trigger context synthesis manually
+
+If you want to re-synthesize context — for example, after updating your product's URLs or description in the dashboard — call:
+
+```
+POST /products/{id}/context
+```
+
+This is a fire-and-forget operation. Oriyn accepts the request and runs synthesis in the background.
+
+<CodeGroup>
+
+```bash Request
+curl -X POST https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479/context \
+  -H "Authorization: Bearer <token>"
+```
+
+```json Response (202 Accepted)
+{
+  "status": "processing"
+}
+```
+
+</CodeGroup>
+
+Poll `GET /products/{id}` and check `context_status` to know when synthesis is complete.
+
+## Update context manually
+
+If the AI-generated context is inaccurate or incomplete, you can override any field by sending a `PATCH` request with a partial or full context object.
+
+```
+PATCH /products/{id}/context
+```
+
+Send only the fields you want to change — you don't need to include all fields.
+
+<CodeGroup>
+
+```bash Request
+curl -X PATCH https://api.oriyn.ai/products/f47ac10b-58cc-4372-a567-0e02b2c3d479/context \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_users": "Mid-market product managers at companies with 50–500 employees",
+    "value_proposition": "Cut onboarding drop-off by 40% without writing a single line of code"
+  }'
+```
+
+```json Response
+{
+  "company": "Example Inc.",
+  "product_summary": "Launchpad helps B2B SaaS teams automate and personalize onboarding flows.",
+  "core_features": [
+    "Checklist-based onboarding",
+    "In-app tooltips and walkthroughs",
+    "Segment-based messaging"
+  ],
+  "target_users": "Mid-market product managers at companies with 50–500 employees",
+  "value_proposition": "Cut onboarding drop-off by 40% without writing a single line of code",
+  "use_cases": [
+    "Onboarding new signups to core features",
+    "Re-engaging churned or inactive users",
+    "Driving activation for specific user segments"
+  ]
+}
+```
+
+</CodeGroup>
+
+<Tip>
+Use manual updates when Oriyn's synthesis misses nuance — for example, if your product serves a specific vertical or has a more precise ICP than the AI inferred. The more accurate the context, the more useful your enrichment results.
+</Tip>
+
+## Full context object reference
+
+```json
+{
+  "company": "string",
+  "product_summary": "string",
+  "core_features": ["string"],
+  "target_users": "string",
+  "value_proposition": "string",
+  "use_cases": ["string"]
+}
+```
+
+## Next step
+
+Once `context_status` is `"ready"`, your product is eligible for enrichment. See [Enrichment](/products/enrichment) to learn how to generate personas and behavioral insights.

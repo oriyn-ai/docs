@@ -1,0 +1,126 @@
+{
+  "projectType": "saas",
+  "projectName": "Oriyn",
+  "projectDescription": "Oriyn is a behavioral intelligence platform that instruments user behavior, builds predictive sequence models, and tells product teams what to build next.",
+  "theme": "luma",
+  "primaryColor": "#1447e6",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "concepts"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
+              "products/overview",
+              "products/context",
+              "products/enrichment"
+            ]
+          },
+          {
+            "group": "Intelligence",
+            "pages": [
+              "intelligence/personas",
+              "intelligence/patterns",
+              "intelligence/direction"
+            ]
+          },
+          {
+            "group": "Experiments",
+            "pages": [
+              "experiments/overview",
+              "experiments/running",
+              "experiments/results"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/posthog"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/installation",
+              "cli/authentication",
+              "cli/commands"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api-reference/products",
+              "api-reference/enrichment",
+              "api-reference/experiments",
+              "api-reference/integrations"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Behavioral instrumentation via PostHog integration",
+    "AI-generated user personas from real behavioral data",
+    "Behavioral pattern detection and sequence analysis",
+    "Prescriptive product direction recommendations",
+    "Hypothesis experiments simulated against user personas",
+    "Natural-language query interface for behavioral intelligence",
+    "CLI for agent and programmatic access"
+  ],
+  "publicApiSurface": [
+    "GET /products — list products",
+    "GET /products/{id} — get product details",
+    "POST /products/{id}/context — synthesize product context",
+    "PATCH /products/{id}/context — update product context",
+    "POST /products/{id}/enrich — trigger behavioral enrichment",
+    "GET /products/{id}/personas — get AI-generated personas",
+    "GET /products/{id}/patterns — get behavioral patterns",
+    "GET /products/{id}/direction — get prescriptive direction",
+    "GET /products/{id}/experiments — list experiments",
+    "POST /products/{id}/experiments — create experiment",
+    "GET /products/{id}/experiments/{experiment_id} — get experiment results",
+    "GET /integrations/providers — list available integrations",
+    "POST /integrations/session-token — create integration session",
+    "GET /integrations/connections — list connected integrations",
+    "DELETE /integrations/connections/{connection_id} — remove integration",
+    "GET /v1/me — get current user",
+    "oriyn login — authenticate via browser OAuth",
+    "oriyn logout — remove stored credentials",
+    "oriyn whoami — show current user",
+    "oriyn query <prompt> — natural-language behavioral query",
+    "oriyn products [list|get] — manage products",
+    "oriyn personas --product-id <id> — view personas",
+    "oriyn patterns --product-id <id> — view behavioral patterns",
+    "oriyn direction --product-id <id> — view prescriptive direction",
+    "oriyn synthesize --product-id <id> — trigger context synthesis",
+    "oriyn enrich --product-id <id> — trigger behavioral enrichment",
+    "oriyn experiment run --product <id> --hypothesis <text> — run experiment",
+    "oriyn experiment list --product <id> — list experiments",
+    "oriyn experiment get --product <id> --experiment <id> — get experiment results"
+  ]
+}

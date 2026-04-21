@@ -1,0 +1,98 @@
+---
+title: "Product Direction"
+description: "AI-generated recommendations for what to build or change next, grounded in behavioral evidence from your user data."
+---
+
+After enrichment runs, Oriyn generates 3–5 prescriptive recommendations for your product. These aren't generic best practices — each recommendation is derived from the behavioral signals found in your specific data. Direction tells you what to act on and why, without you having to ask.
+
+## What direction contains
+
+Each direction record includes a list of recommendations. Each recommendation has:
+
+- **`title`** — a short, action-oriented description of what to do
+- **`rationale`** — the behavioral evidence behind the recommendation, explained in plain language
+- **`priority`** — `high`, `medium`, or `low`, based on the strength and prevalence of the underlying signals
+
+The record also includes:
+
+- **`derived_from`** — a list of the behavioral signals (patterns, persona traits, event sequences) that informed the recommendations
+- **`generated_at`** — the timestamp for when these recommendations were generated
+
+The `derived_from` field is your audit trail. If a recommendation surprises you, use it to trace back to the underlying data.
+
+## Direction vs. experiments
+
+Direction is unprompted. Oriyn surfaces it automatically based on what the data shows — you don't have to formulate a hypothesis first.
+
+[Experiments](/experiments) work the other way: you bring a hypothesis and test it. The two are complementary. Direction is useful for discovering what to test; experiments are how you validate it.
+
+<Tip>
+  When a high-priority recommendation appears in your direction output, consider running an experiment on it. You'll have the behavioral rationale already — use it as the basis for your hypothesis and success criteria.
+</Tip>
+
+## Retrieve direction
+
+### API
+
+```bash
+curl https://api.oriyn.ai/products/{product_id}/direction \
+  -H "Authorization: Bearer <token>"
+```
+
+**Response:**
+
+```json
+{
+  "enrichment_status": "ready",
+  "data": [
+    {
+      "id": "e4a3f1c2-9e7f-4d3a-88b0-5a6b1c2d3e4f",
+      "recommendations": [
+        {
+          "title": "Add contextual credential guidance to the integration setup flow",
+          "rationale": "41% of integration setup attempts involve users reaching the credentials step, navigating away, and returning multiple times. Users aren't failing because of intent — they're failing because they don't know what to enter or where to find it. Adding inline guidance or a help link at that step should reduce abandonment materially.",
+          "priority": "high"
+        },
+        {
+          "title": "Introduce a 'start from scratch' prompt alongside template browsing",
+          "rationale": "A majority of new users browse templates extensively without creating anything. The browsing behavior suggests they're looking for a starting point, not a finished template. Offering a blank-canvas path next to templates may reduce the hesitation that precedes exit.",
+          "priority": "medium"
+        },
+        {
+          "title": "Surface advanced features earlier for users matching the Habitual Automator pattern",
+          "rationale": "Users who create an automation in their first 3 sessions and return frequently are underserved by onboarding flows designed for cautious evaluators. Detecting this behavior early and adjusting the experience — e.g., skipping introductory tooltips, surfacing power features — could increase depth of engagement for your highest-retention segment.",
+          "priority": "medium"
+        }
+      ],
+      "derived_from": [
+        "Integration Setup Loop pattern",
+        "Template Browse Without Create pattern",
+        "Habitual Automator persona — behavioral_traits"
+      ],
+      "generated_at": "2026-04-01T14:32:00Z"
+    }
+  ]
+}
+```
+
+### CLI
+
+```bash
+oriyn direction --product-id <product_id>
+```
+
+Add `--json` to get the raw JSON response:
+
+```bash
+oriyn direction --product-id <product_id> --json
+```
+
+## Typical use cases
+
+**Generating a backlog of evidence-backed work.** Direction gives your team concrete, prioritized starting points that don't require someone to already have the right intuition.
+
+**Aligning on priorities.** Because each recommendation includes its rationale and source signals, you can share it with stakeholders without needing to reconstruct the reasoning.
+
+**Feeding into experiments.** High-priority recommendations are well-suited to become experiment hypotheses. The `rationale` field gives you the behavioral framing; the experiment gives you the validation.
+
+Direction updates each time enrichment runs. Re-running enrichment after shipping changes will show whether the underlying signals have shifted — and whether the recommendations change as a result.

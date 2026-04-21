@@ -1,0 +1,51 @@
+---
+title: "Experiments"
+description: "Test product hypotheses against your simulated user personas before you ship."
+---
+
+Experiments let you validate a product change before writing a single line of code. You provide a hypothesis — a specific, testable statement about how a change would affect your users — and Oriyn simulates how each of your personas would respond. The result is a verdict grounded in your actual user data, not guesswork.
+
+## How it works
+
+When you run an experiment, Oriyn distributes the hypothesis across 50 AI agents, each representing one of your product's personas proportionally by size. Each agent responds authentically based on the behavioral traits of that persona. Oriyn then synthesizes those responses into a structured result.
+
+You get back:
+
+- A **verdict** — a clear recommendation on what to do next
+- A **confidence score** — how strongly the personas agreed
+- A **natural language summary** — what the personas said and why
+- A **per-persona breakdown** — which segments responded positively, neutrally, or negatively
+
+## Verdicts
+
+| Verdict | Meaning |
+| --- | --- |
+| `ship` | Strong positive signal. Go ahead. |
+| `revise` | Mixed signal. Consider changes before shipping. |
+| `reject` | Negative signal. Reconsider the hypothesis entirely. |
+
+## Confidence score
+
+The confidence score ranges from `0.0` to `1.0`. A higher score means your personas agreed more strongly on their response — whether that agreement is positive or negative.
+
+- **0.0** — deeply split opinion across personas
+- **1.0** — unanimous response
+
+A `ship` verdict with a confidence of `0.95` is a much stronger signal than the same verdict at `0.55`. Use confidence alongside the verdict, not instead of it.
+
+## Before you run an experiment
+
+Experiments require your product to have been enriched. Enrichment builds the personas that Oriyn uses to simulate responses. If you haven't run enrichment yet, do that first.
+
+You can check whether enrichment has run by navigating to your product in the dashboard and confirming that personas exist.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Running Experiments" icon="play" href="/experiments/running">
+    Learn how to write a good hypothesis and run your first experiment via the dashboard, API, or CLI.
+  </Card>
+  <Card title="Reading Results" icon="chart-bar" href="/experiments/results">
+    Understand how to interpret verdicts, confidence scores, and per-persona breakdowns.
+  </Card>
+</CardGroup>
