@@ -73,6 +73,46 @@ All error responses use standard HTTP status codes and return a JSON body descri
 | `409 Conflict` | The operation is already in progress (e.g., enrichment is already running) |
 | `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state |
 
+## Authorization errors
+
+Some endpoints require a specific permission on the organization that owns the resource. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
+
+```json 403 — missing permission
+{
+  "error": "this action requires `content:write`",
+  "required_permission": "content:write",
+  "role": "viewer",
+  "org_id": "b2c3d4e5-f6a7-8901-bcde-f01234567891"
+}
+```
+
+If the caller is not a member of the target organization at all, `role` is `null`:
+
+```json 403 — not a member
+{
+  "error": "not a member of this organization",
+  "required_permission": "content:write",
+  "role": null,
+  "org_id": "b2c3d4e5-f6a7-8901-bcde-f01234567891"
+}
+```
+
+### Roles and permissions
+
+Each organization member has one of four roles. The role determines which permissions they hold:
+
+| Permission | Owner | Admin | Member | Viewer |
+|---|:-:|:-:|:-:|:-:|
+| `content:write` — create and modify products, experiments | Yes | Yes | Yes | — |
+| `billing:read` — view plan, credits, invoices | Yes | Yes | — | — |
+| `billing:write` — manage subscription, cards, and credit purchases | Yes | — | — | — |
+| `integrations:write` — add and remove data source connections | Yes | Yes | — | — |
+| `members:invite`, `members:remove`, `members:update_role` | Yes | Yes | — | — |
+| `org:update` — rename org, update settings | Yes | Yes | — | — |
+| `org:delete`, `org:transfer`, `members:invite_owner` | Yes | — | — | — |
+
+Endpoint reference pages call out the specific permission each mutating endpoint requires.
+
 ## Explore the API
 
 <CardGroup cols={2}>
