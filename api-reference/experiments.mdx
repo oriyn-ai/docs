@@ -111,6 +111,42 @@ This is an async operation. The endpoint returns `202 Accepted` immediately. Pol
   The hypothesis to evaluate. Write it as a plain-language statement of what you believe to be true and why. The more specific, the better.
 </ParamField>
 
+<ParamField body="agent_count" type="integer">
+  Number of simulated agents to run (1–1000). Defaults to the server-configured value (currently 50). Higher counts produce more statistically robust results but cost more credits.
+
+  Each plan has a maximum agent count. Enterprise organizations may have a custom ceiling. Billing-exempt organizations have no limit.
+</ParamField>
+
+### Error responses
+
+Creating an experiment can return additional error codes beyond the standard set:
+
+| Status | Error | Description |
+|---|---|---|
+| `402 Payment Required` | `insufficient_credits` | Your organization doesn't have enough credits. The response includes `credits_required`, `credits_available`, and `plan`. |
+| `403 Forbidden` | `agent_count_exceeded` | The requested `agent_count` exceeds your plan's maximum. The response includes `max_agent_count` and `plan`. |
+
+```json 402 — insufficient credits
+{
+  "error": "insufficient_credits",
+  "credits_required": 10,
+  "credits_available": 1,
+  "plan": "free"
+}
+```
+
+```json 403 — agent count exceeded
+{
+  "error": "agent_count_exceeded",
+  "max_agent_count": 100,
+  "plan": "free"
+}
+```
+
+<Note>
+Billing-exempt organizations bypass both credit checks and agent count limits. Enterprise organizations may have custom agent count ceilings that differ from their plan's default.
+</Note>
+
 <CodeGroup>
 
 ```bash cURL
