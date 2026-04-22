@@ -59,4 +59,4 @@ Store your token securely. Do not commit it to version control or expose it in c
 | Status | Meaning |
 |---|---|
 | `401 Unauthorized` | Your token is missing, malformed, or expired. Check that you're passing the `Authorization: Bearer <token>` header correctly, and refresh your token if needed. |
-| `403 Forbidden` | Your token is valid, but you don't have permission to access this resource. This typically means the resource belongs to a different organization. |
+| `403 Forbidden` | Your token is valid, but you don't have permission to access this resource. Either the resource belongs to a different organization, or your role on the organization does not grant the required permission. See [authorization errors](/api-reference/overview#authorization-errors) for the response body. |
