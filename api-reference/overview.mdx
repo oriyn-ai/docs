@@ -67,7 +67,8 @@ All error responses use standard HTTP status codes and return a JSON body descri
 |---|---|
 | `400 Bad Request` | Invalid input or a precondition is not met (e.g., enrichment has not been run yet) |
 | `401 Unauthorized` | Missing or invalid Bearer token |
-| `403 Forbidden` | Your token is valid but you don't have access to this resource |
+| `402 Payment Required` | Insufficient credits to complete the operation |
+| `403 Forbidden` | Your token is valid but you don't have access to this resource, or you've exceeded a plan limit |
 | `404 Not Found` | The resource doesn't exist or doesn't belong to your organization |
 | `409 Conflict` | The operation is already in progress (e.g., enrichment is already running) |
 | `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state |
