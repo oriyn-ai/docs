@@ -47,6 +47,7 @@ Several operations take time to complete. These endpoints return HTTP `202 Accep
 |---|---|
 | `POST /products/{id}/context` | Synthesizes product context from your URLs |
 | `POST /products/{id}/enrich` | Runs behavioral enrichment (personas, patterns, direction) |
+| `POST /products/{id}/patterns/refresh` | Re-mines behavioral patterns and bottlenecks in the background |
 | `POST /products/{id}/experiments` | Evaluates a hypothesis against your personas |
 
 After receiving a `202`, poll the relevant status field to track progress:
