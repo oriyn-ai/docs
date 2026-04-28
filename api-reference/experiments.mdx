@@ -100,7 +100,7 @@ POST /products/{id}/experiments
 This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}/experiments/{experiment_id}` and check `status` until it is `complete` or `failed`.
 
 <Note>
-Requires the `content:write` permission on the organization that owns the product. Owners, admins, and members have this permission by default; viewers do not. See [authorization errors](/api-reference/overview#authorization-errors) for the `403` response shape.
+Requires the `org:content:write` permission on the organization that owns the product. Owners, admins, and members have this permission by default; viewers do not. See [authorization errors](/api-reference/overview#authorization-errors) for the `403` response shape.
 </Note>
 
 ### Path parameters
@@ -129,7 +129,7 @@ Creating an experiment can return additional error codes beyond the standard set
 |---|---|---|
 | `402 Payment Required` | `insufficient_credits` | Your organization doesn't have enough credits. The response includes `credits_required`, `credits_available`, and `plan`. |
 | `403 Forbidden` | `agent_count_exceeded` | The requested `agent_count` exceeds your plan's maximum. The response includes `max_agent_count` and `plan`. |
-| `403 Forbidden` | Authorization failure | The caller's role lacks the `content:write` permission on the org that owns this product. See [authorization errors](/api-reference/overview#authorization-errors). |
+| `403 Forbidden` | Authorization failure | The caller's role lacks the `org:content:write` permission on the org that owns this product. See [authorization errors](/api-reference/overview#authorization-errors). |
 
 ```json 402 — insufficient credits
 {

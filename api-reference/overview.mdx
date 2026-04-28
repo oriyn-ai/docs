@@ -76,43 +76,28 @@ All error responses use standard HTTP status codes and return a JSON body descri
 
 ## Authorization errors
 
-Some endpoints require a specific permission on the organization that owns the resource. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
+Some endpoints require a specific permission on the organization that owns the resource. Permissions are read from the caller's session token, which is issued for the user's currently active organization. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
 
 ```json 403 — missing permission
 {
-  "error": "this action requires `content:write`",
-  "required_permission": "content:write",
-  "role": "viewer",
-  "org_id": "b2c3d4e5-f6a7-8901-bcde-f01234567891"
+  "error": "this action requires `org:content:write`",
+  "required_permission": "org:content:write",
+  "role": "org:viewer"
 }
 ```
 
-If the caller is not a member of the target organization at all, `role` is `null`:
-
-```json 403 — not a member
-{
-  "error": "not a member of this organization",
-  "required_permission": "content:write",
-  "role": null,
-  "org_id": "b2c3d4e5-f6a7-8901-bcde-f01234567891"
-}
-```
+If the caller's session token does not include any active organization (for example, the user has not yet selected an org), the API returns `401 Unauthorized` instead. The frontend should redirect to onboarding to complete org setup.
 
 ### Roles and permissions
 
-Each organization member has one of four roles. The role determines which permissions they hold:
+Each organization member has one of four roles. The role determines which permissions they hold. Both roles and permissions are scoped under the `org:` namespace:
 
-| Permission | Owner | Admin | Member | Viewer |
+| Permission | `org:owner` | `org:admin` | `org:member` | `org:viewer` |
 |---|:-:|:-:|:-:|:-:|
-| `content:write` — create and modify products, experiments | Yes | Yes | Yes | — |
-| `billing:read` — view plan, credits, invoices | Yes | Yes | — | — |
-| `billing:write` — manage subscription, cards, and credit purchases | Yes | — | — | — |
-| `integrations:write` — add and remove data source connections | Yes | Yes | — | — |
-| `members:invite`, `members:remove`, `members:update_role` | Yes | Yes | — | — |
-| `org:update` — rename org, update settings | Yes | Yes | — | — |
-| `org:delete`, `org:transfer`, `members:invite_owner` | Yes | — | — | — |
+| `org:content:write` — create and modify products, experiments | Yes | Yes | Yes | — |
+| `org:sys_billing:manage` — manage subscription, cards, and credit purchases | Yes | — | — | — |
 
-Endpoint reference pages call out the specific permission each mutating endpoint requires.
+Endpoint reference pages call out the specific permission each mutating endpoint requires. Members and roles are managed in the [Oriyn web app](https://app.oriyn.ai); the API is not the source of truth for membership.
 
 ## Explore the API
 
