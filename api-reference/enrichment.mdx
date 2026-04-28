@@ -1,34 +1,37 @@
 ---
 title: "Enrichment API endpoints"
-description: "Trigger enrichment runs and fetch personas, behavioral patterns, bottlenecks, and direction for your product through the Oriyn REST API."
+description: "Trigger enrichment runs and fetch personas, behavioral hypotheses, and bottlenecks for your product through the Oriyn REST API."
 ---
 
-Enrichment is the process that reads your PostHog behavioral event data and generates intelligence about your users. Once enrichment is complete, you can retrieve three types of output: **personas**, **patterns**, and **direction**.
+Enrichment is the process that reads your behavioral event data and generates intelligence about your users. Once enrichment is complete, you can retrieve **personas**. A separate pattern-mining pass produces **hypotheses** (testable behavioral sequences) and **bottlenecks** (slow edges in the directly-follows graph).
 
 <Note>
-Two preconditions must be met before running enrichment: the product's `context_status` must be `ready`, and a PostHog integration must be connected to your organization. If context is not ready, the request returns `400 Bad Request`.
+Two preconditions must be met before running enrichment: the product's `context_status` must be `ready` and the `context` object must be populated. If context is not ready, the request returns `422 Unprocessable Entity`.
 </Note>
 
 ## Endpoints
 
-- [Trigger enrichment](#trigger-enrichment) — `POST /products/{id}/enrich`
-- [Get personas](#get-personas) — `GET /products/{id}/personas`
-- [Get patterns](#get-patterns) — `GET /products/{id}/patterns`
-- [Refresh patterns](#refresh-patterns) — `POST /products/{id}/patterns/refresh`
-- [Get bottlenecks](#get-bottlenecks) — `GET /products/{id}/bottlenecks`
-- [Get direction](#get-direction) — `GET /products/{id}/direction`
+- [Trigger enrichment](#trigger-enrichment) — `POST /v1/products/{id}/enrich`
+- [Get personas](#get-personas) — `GET /v1/products/{id}/personas`
+- [Get hypotheses](#get-hypotheses) — `GET /v1/products/{id}/hypotheses`
+- [Refresh hypotheses](#refresh-hypotheses) — `POST /v1/products/{id}/hypotheses/refresh`
+- [Get bottlenecks](#get-bottlenecks) — `GET /v1/products/{id}/bottlenecks`
+
+<Warning>
+The previous `GET /products/{id}/patterns`, `POST /products/{id}/patterns/refresh`, and `GET /products/{id}/direction` endpoints have been replaced. `patterns` is now `hypotheses`. `direction` has been removed — strategic recommendations are no longer exposed as a separate endpoint.
+</Warning>
 
 ---
 
 ## Trigger enrichment
 
-Start the enrichment process for a product. Oriyn reads your PostHog behavioral event data and generates personas, behavioral patterns, and strategic direction.
+Start the enrichment process for a product. Oriyn reads your connected behavioral event data and generates personas grounded in observed user activity.
 
 ```
-POST /products/{id}/enrich
+POST /v1/products/{id}/enrich
 ```
 
-This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}` and check `enrichment_status` until it is `ready` or `failed`.
+This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /v1/products/{id}` and check `enrichment_status` until it is `ready` or `failed`.
 
 ### Path parameters
 
@@ -37,14 +40,14 @@ This is an async operation. The endpoint returns `202 Accepted` immediately. Pol
 </ParamField>
 
 <Warning>
-If enrichment is already running, the endpoint returns `409 Conflict`. If context is not ready, it returns `400 Bad Request`. Ensure `context_status` is `ready` before triggering enrichment.
+If enrichment is already running, the endpoint returns `409 Conflict`. If `context_status` is not `ready` or the context object is empty, it returns `422 Unprocessable Entity`.
 </Warning>
 
 <CodeGroup>
 
 ```bash cURL
 curl --request POST \
-  https://api.oriyn.ai/products/<product-id>/enrich \
+  https://api.oriyn.ai/v1/products/<product-id>/enrich \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -61,7 +64,7 @@ Poll for completion:
 <CodeGroup>
 
 ```bash Poll enrichment status
-curl https://api.oriyn.ai/products/<product-id> \
+curl https://api.oriyn.ai/v1/products/<product-id> \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -74,7 +77,7 @@ curl https://api.oriyn.ai/products/<product-id> \
 }
 ```
 
-Once `enrichment_status` is `ready`, you can retrieve personas, patterns, and direction.
+Once `enrichment_status` is `ready`, you can retrieve personas, hypotheses, and bottlenecks.
 
 ---
 
@@ -83,7 +86,7 @@ Once `enrichment_status` is `ready`, you can retrieve personas, patterns, and di
 Retrieve the behavioral personas generated for a product.
 
 ```
-GET /products/{id}/personas
+GET /v1/products/{id}/personas
 ```
 
 ### Path parameters
@@ -95,7 +98,7 @@ GET /products/{id}/personas
 <CodeGroup>
 
 ```bash cURL
-curl https://api.oriyn.ai/products/<product-id>/personas \
+curl https://api.oriyn.ai/v1/products/<product-id>/personas \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -115,23 +118,16 @@ curl https://api.oriyn.ai/products/<product-id>/personas \
         "Explores settings and advanced features unprompted"
       ],
       "size_estimate": 35,
-      "generated_at": "2026-01-15T10:00:00Z"
-    },
-    {
-      "id": "d2e3f4a5-b6c7-8901-defa-234567890bcd",
-      "name": "The Occasional User",
-      "description": "Logs in infrequently and relies on familiar, well-established workflows.",
-      "behavioral_traits": [
-        "Returns to the same entry points repeatedly",
-        "Rarely explores new features independently",
-        "Needs clear visual affordances"
-      ],
-      "size_estimate": 42,
-      "generated_at": "2026-01-15T10:00:00Z"
+      "generated_at": "2026-01-15T10:00:00Z",
+      "status": "active",
+      "updated_at": "2026-01-15T10:00:00Z",
+      "trait_citation_counts": [12, 5, 8]
     }
   ]
 }
 ```
+
+If enrichment has never been run for this product, the endpoint returns `400 Bad Request` (`enrichment has not been run`).
 
 ### Response fields
 
@@ -158,19 +154,28 @@ curl https://api.oriyn.ai/products/<product-id>/personas \
       Estimated percentage of your user base this persona represents.
     </ResponseField>
     <ResponseField name="generated_at" type="string" required>
-      ISO 8601 timestamp of when this persona was generated.
+      ISO 8601 timestamp of when this persona was first generated.
+    </ResponseField>
+    <ResponseField name="status" type="string">
+      Lifecycle state of the persona. Defaults to `active`.
+    </ResponseField>
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp of the last time this persona was updated. `null` if never updated after creation.
+    </ResponseField>
+    <ResponseField name="trait_citation_counts" type="number[]">
+      Per-trait count of supporting session-level citations, aligned by index with `behavioral_traits`. `null` when citation counts have not been computed yet.
     </ResponseField>
   </Expandable>
 </ResponseField>
 
 ---
 
-## Get patterns
+## Get hypotheses
 
-Retrieve the most recent behavioral patterns mined for a product. Patterns are materialized by the pattern-mining worker and returned directly from the read path — this endpoint does not mine on demand. To refresh them, call [Refresh patterns](#refresh-patterns).
+Retrieve the most recent behavioral hypotheses mined for a product. Hypotheses are testable event sequences materialized by the pattern-mining worker and returned directly from the read path — this endpoint does not mine on demand. To refresh them, call [Refresh hypotheses](#refresh-hypotheses).
 
 ```
-GET /products/{id}/patterns
+GET /v1/products/{id}/hypotheses
 ```
 
 ### Path parameters
@@ -182,7 +187,7 @@ GET /products/{id}/patterns
 <CodeGroup>
 
 ```bash cURL
-curl https://api.oriyn.ai/products/<product-id>/patterns \
+curl https://api.oriyn.ai/v1/products/<product-id>/hypotheses \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -193,18 +198,25 @@ curl https://api.oriyn.ai/products/<product-id>/patterns \
   "enrichment_status": "ready",
   "data": [
     {
-      "id": "e3f4a5b6-c7d8-9012-efab-345678901cde",
-      "title": "Onboarding drop-off at step 3",
-      "description": "A significant portion of new users abandon the setup flow at the third step, which requires connecting an external data source.",
-      "frequency": "high",
-      "significance": "high",
-      "raw_sequence": [
+      "sequence": [
         "user_signed_up",
         "completed_step_1",
         "completed_step_2",
         "abandoned_step_3"
       ],
-      "generated_at": "2026-01-15T10:00:00Z"
+      "rendered_sequence": [
+        "User signed up",
+        "Completed step 1",
+        "Completed step 2",
+        "Abandoned step 3"
+      ],
+      "frequency": 412,
+      "user_count": 287,
+      "significance_pct": 18.4,
+      "source_users": [
+        "user_01H8ZK3P...",
+        "user_01H92YTM..."
+      ]
     }
   ]
 }
@@ -217,40 +229,37 @@ curl https://api.oriyn.ai/products/<product-id>/patterns \
 </ResponseField>
 
 <ResponseField name="data" type="object[]" required>
-  Array of pattern objects.
-  <Expandable title="pattern fields">
-    <ResponseField name="id" type="string" required>
-      Unique identifier for the pattern.
+  Array of hypothesis objects.
+  <Expandable title="hypothesis fields">
+    <ResponseField name="sequence" type="string[]" required>
+      The raw activity names that define the mined sequence, in order.
     </ResponseField>
-    <ResponseField name="title" type="string" required>
-      Short title describing the pattern.
+    <ResponseField name="rendered_sequence" type="string[]" required>
+      The same activities rendered as human-readable labels.
     </ResponseField>
-    <ResponseField name="description" type="string" required>
-      Detailed explanation of the pattern and its context.
+    <ResponseField name="frequency" type="number" required>
+      Total number of times this sequence was observed across all users in the mined window.
     </ResponseField>
-    <ResponseField name="frequency" type="string" required>
-      How often this pattern is observed. Qualitative descriptor such as `high`, `medium`, or `low`.
+    <ResponseField name="user_count" type="number" required>
+      Number of distinct users who exhibited this sequence.
     </ResponseField>
-    <ResponseField name="significance" type="string" required>
-      How significant this pattern is to product outcomes. Qualitative descriptor such as `high`, `medium`, or `low`.
+    <ResponseField name="significance_pct" type="number" required>
+      Significance score expressed as a percentage. Reflects how meaningful this sequence is relative to the total user population.
     </ResponseField>
-    <ResponseField name="raw_sequence" type="string[]" required>
-      The raw event sequence that defines this pattern.
-    </ResponseField>
-    <ResponseField name="generated_at" type="string" required>
-      ISO 8601 timestamp of when this pattern was generated.
+    <ResponseField name="source_users" type="string[]" required>
+      Sample of resolved user identifiers that exhibited this sequence — used to seed experiments or drill into a cohort.
     </ResponseField>
   </Expandable>
 </ResponseField>
 
 ---
 
-## Refresh patterns
+## Refresh hypotheses
 
-Trigger a fresh pattern-mining pass in the background. The endpoint returns `202 Accepted` immediately; re-poll [Get patterns](#get-patterns) and [Get bottlenecks](#get-bottlenecks) to read the newly mined results once mining completes.
+Trigger a fresh pattern-mining pass in the background. The endpoint returns `202 Accepted` immediately; re-poll [Get hypotheses](#get-hypotheses) and [Get bottlenecks](#get-bottlenecks) to read the newly mined results once mining completes.
 
 ```
-POST /products/{id}/patterns/refresh
+POST /v1/products/{id}/hypotheses/refresh
 ```
 
 ### Path parameters
@@ -267,7 +276,7 @@ If a pattern-mining pass is already running for this product, the endpoint retur
 
 ```bash cURL
 curl --request POST \
-  https://api.oriyn.ai/products/<product-id>/patterns/refresh \
+  https://api.oriyn.ai/v1/products/<product-id>/hypotheses/refresh \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -283,10 +292,10 @@ curl --request POST \
 
 ## Get bottlenecks
 
-Retrieve the slowest directly-follows edges in your product's behavioral graph — pairs of activities where the mean transit time between them is high across many users. Bottlenecks are mined by the same pass that produces patterns, so refreshing patterns also refreshes bottlenecks.
+Retrieve the slowest directly-follows edges in your product's behavioral graph — pairs of activities where the mean transit time between them is high across many users. Bottlenecks are mined by the same pass that produces hypotheses, so refreshing hypotheses also refreshes bottlenecks.
 
 ```
-GET /products/{id}/bottlenecks
+GET /v1/products/{id}/bottlenecks
 ```
 
 ### Path parameters
@@ -298,7 +307,7 @@ GET /products/{id}/bottlenecks
 <CodeGroup>
 
 ```bash cURL
-curl https://api.oriyn.ai/products/<product-id>/bottlenecks \
+curl https://api.oriyn.ai/v1/products/<product-id>/bottlenecks \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -355,94 +364,6 @@ curl https://api.oriyn.ai/products/<product-id>/bottlenecks \
     </ResponseField>
     <ResponseField name="source_users" type="string[]" required>
       Sample of user identifiers that traversed this edge — used to seed experiments or drill into a cohort.
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
----
-
-## Get direction
-
-Retrieve strategic recommendations derived from enrichment.
-
-```
-GET /products/{id}/direction
-```
-
-### Path parameters
-
-<ParamField path="id" type="string" required>
-  The product UUID.
-</ParamField>
-
-<CodeGroup>
-
-```bash cURL
-curl https://api.oriyn.ai/products/<product-id>/direction \
-  --header "Authorization: Bearer <your-token>"
-```
-
-</CodeGroup>
-
-```json Response
-{
-  "enrichment_status": "ready",
-  "data": [
-    {
-      "id": "f4a5b6c7-d8e9-0123-fabc-456789012def",
-      "recommendations": [
-        {
-          "title": "Simplify the data source connection step",
-          "rationale": "The onboarding drop-off pattern indicates users struggle with the external connection requirement. Offering a demo mode or deferred setup could reduce abandonment.",
-          "priority": "high"
-        },
-        {
-          "title": "Surface keyboard shortcuts to power users",
-          "rationale": "Power users actively seek efficiency features but may not discover shortcuts without prompting. An onboarding nudge could improve retention in this segment.",
-          "priority": "medium"
-        }
-      ],
-      "derived_from": [
-        "Onboarding drop-off pattern at step 3",
-        "The Power User persona — behavioral_traits"
-      ],
-      "generated_at": "2026-01-15T10:00:00Z"
-    }
-  ]
-}
-```
-
-### Response fields
-
-<ResponseField name="enrichment_status" type="string" required>
-  Current enrichment status for the product.
-</ResponseField>
-
-<ResponseField name="data" type="object[]" required>
-  Array of direction objects.
-  <Expandable title="direction fields">
-    <ResponseField name="id" type="string" required>
-      Unique identifier for this direction entry.
-    </ResponseField>
-    <ResponseField name="recommendations" type="object[]" required>
-      List of strategic recommendations.
-      <Expandable title="recommendation fields">
-        <ResponseField name="title" type="string" required>
-          Short title for the recommendation.
-        </ResponseField>
-        <ResponseField name="rationale" type="string" required>
-          Explanation of why this recommendation is relevant, grounded in the enrichment data.
-        </ResponseField>
-        <ResponseField name="priority" type="string" required>
-          Priority level: `high`, `medium`, or `low`.
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-    <ResponseField name="derived_from" type="string[]" required>
-      List of behavioral signals (patterns, persona traits, event sequences) that informed these recommendations.
-    </ResponseField>
-    <ResponseField name="generated_at" type="string" required>
-      ISO 8601 timestamp of when this direction was generated.
     </ResponseField>
   </Expandable>
 </ResponseField>

@@ -1,145 +1,35 @@
 ---
 title: "Integrations API endpoints"
-description: "List available analytics providers, view active connections, and disconnect data sources from your Oriyn organization through the REST API."
+description: "Integration providers and connections are managed through the Oriyn web app, not the REST API."
 ---
 
-Integrations connect Oriyn to external data sources such as analytics platforms. You can list available providers, view your active connections, and remove connections you no longer need.
-
-## Endpoints
-
-- [List providers](#list-providers) — `GET /integrations/providers`
-- [List connections](#list-connections) — `GET /integrations/connections`
-- [Delete a connection](#delete-a-connection) — `DELETE /integrations/connections/{connection_id}`
-
----
-
-## List providers
-
-Retrieve all available integration providers. This endpoint does not require authentication.
-
-```
-GET /integrations/providers
-```
-
-<CodeGroup>
-
-```bash cURL
-curl https://api.oriyn.ai/integrations/providers
-```
-
-</CodeGroup>
-
-```json Response
-[
-  {
-    "id": "posthog",
-    "name": "PostHog",
-    "description": "Connect your PostHog workspace to pull behavioral event data into Oriyn enrichment."
-  }
-]
-```
-
-### Response fields
-
-<ResponseField name="id" type="string" required>
-  Unique identifier for the provider. Use this ID when referencing a provider in other API calls (e.g., the `integration_id` query parameter when deleting a connection).
-</ResponseField>
-
-<ResponseField name="name" type="string" required>
-  Display name of the provider.
-</ResponseField>
-
-<ResponseField name="description" type="string" required>
-  Short description of what this integration provides.
-</ResponseField>
-
----
-
-## List connections
-
-Retrieve all active integrations connections for your organization.
-
-```
-GET /integrations/connections
-```
-
-<CodeGroup>
-
-```bash cURL
-curl https://api.oriyn.ai/integrations/connections \
-  --header "Authorization: Bearer <your-token>"
-```
-
-</CodeGroup>
-
-```json Response
-[
-  {
-    "nango_connection_id": "conn_a1b2c3d4e5f6",
-    "integration_id": "posthog",
-    "valid": true
-  }
-]
-```
-
-### Response fields
-
-<ResponseField name="nango_connection_id" type="string" required>
-  The connection identifier. Use this as the `connection_id` path parameter when deleting a connection.
-</ResponseField>
-
-<ResponseField name="integration_id" type="string" required>
-  The provider this connection belongs to (e.g., `posthog`).
-</ResponseField>
-
-<ResponseField name="valid" type="boolean" required>
-  Whether the connection is currently active and healthy. A `false` value indicates the connection has expired or was revoked and needs to be re-established.
-</ResponseField>
-
----
-
-## Delete a connection
-
-Remove an integration connection from your organization. This does not affect data already processed by Oriyn.
-
-```
-DELETE /integrations/connections/{connection_id}
-```
-
-### Path parameters
-
-<ParamField path="connection_id" type="string" required>
-  The `nango_connection_id` of the connection to delete.
-</ParamField>
-
-### Query parameters
-
-<ParamField query="integration_id" type="string" required>
-  The provider ID for this connection (e.g., `posthog`). You can get this from [List connections](#list-connections).
-</ParamField>
+Integrations connect Oriyn to external data sources such as analytics platforms. Connection management — listing providers, viewing active connections, and deleting connections — is handled entirely through the [Oriyn web app](https://app.oriyn.ai). The REST API does not currently expose endpoints for managing integration providers or connections.
 
 <Warning>
-Deleting a connection is immediate and cannot be undone. You will need to reconnect the integration through the Oriyn app if you want to restore it.
+The previously documented `GET /integrations/providers`, `GET /integrations/connections`, and `DELETE /integrations/connections/{connection_id}` endpoints are deprecated and not available in the current `/v1` API surface. CRUD over integrations stays in the web app.
 </Warning>
 
-<CodeGroup>
+## Connecting a data source
 
-```bash cURL
-curl --request DELETE \
-  "https://api.oriyn.ai/integrations/connections/conn_a1b2c3d4e5f6?integration_id=posthog" \
-  --header "Authorization: Bearer <your-token>"
-```
+To connect a provider such as PostHog:
 
-</CodeGroup>
+1. Sign in at [app.oriyn.ai](https://app.oriyn.ai).
+2. Open **Settings → Integrations**.
+3. Choose your provider, complete the OAuth flow, and authorize access.
 
-```json Response
-{
-  "status": "deleted"
-}
-```
+Once connected, the integration immediately becomes available for enrichment runs on any product in your organization.
 
-### Response fields
+## Removing a data source
 
-<ResponseField name="status" type="string" required>
-  Confirmation that the connection was deleted. Value is always `deleted`.
-</ResponseField>
+To disconnect a provider:
+
+1. Open **Settings → Integrations** in the [web app](https://app.oriyn.ai).
+2. Select the connection you want to remove and confirm the deletion.
+
+Disconnecting does not affect data already ingested into Oriyn — only future ingestion is stopped.
+
+## Programmatic access
+
+If your workflow requires programmatic discovery of available providers, the unauthenticated discovery endpoint at [`GET /v1/`](/api-reference/overview#discovering-the-api) returns the list of resource families exposed by the API along with a link to the full OpenAPI spec.
+
+For PostHog-specific guidance, see the [PostHog integration guide](/integrations/posthog).

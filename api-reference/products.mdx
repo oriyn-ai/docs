@@ -7,10 +7,12 @@ Products are the top-level resource in Oriyn. Each product has a context that de
 
 ## Endpoints
 
-- [List products](#list-products) — `GET /products`
-- [Get a product](#get-a-product) — `GET /products/{id}`
-- [Synthesize context](#synthesize-context) — `POST /products/{id}/context`
-- [Update context manually](#update-context-manually) — `PATCH /products/{id}/context`
+- [List products](#list-products) — `GET /v1/products`
+- [Get a product](#get-a-product) — `GET /v1/products/{id}`
+- [Synthesize context](#synthesize-context) — `POST /v1/products/{id}/context`
+- [Update context manually](#update-context-manually) — `PATCH /v1/products/{id}/context`
+- [List context versions](#list-context-versions) — `GET /v1/products/{id}/context/versions`
+- [Get a context version](#get-a-context-version) — `GET /v1/products/{id}/context/versions/{version_id}`
 
 ---
 
@@ -19,13 +21,13 @@ Products are the top-level resource in Oriyn. Each product has a context that de
 Retrieve all products in your organization.
 
 ```
-GET /products
+GET /v1/products
 ```
 
 <CodeGroup>
 
 ```bash cURL
-curl https://api.oriyn.ai/products \
+curl https://api.oriyn.ai/v1/products \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -67,7 +69,7 @@ curl https://api.oriyn.ai/products \
 Retrieve a single product by ID, including its full context and enrichment status.
 
 ```
-GET /products/{id}
+GET /v1/products/{id}
 ```
 
 ### Path parameters
@@ -79,7 +81,7 @@ GET /products/{id}
 <CodeGroup>
 
 ```bash cURL
-curl https://api.oriyn.ai/products/<product-id> \
+curl https://api.oriyn.ai/v1/products/<product-id> \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -89,17 +91,12 @@ curl https://api.oriyn.ai/products/<product-id> \
 {
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "name": "Oriyn Dashboard",
-  "description": "Behavioral intelligence platform for product teams.",
-  "urls": [
-    "https://oriyn.ai",
-    "https://app.oriyn.ai"
-  ],
   "context": {
     "company": "Oriyn",
     "product_summary": "Oriyn is a behavioral intelligence platform for product teams.",
     "core_features": ["Behavioral enrichment", "Persona generation", "Hypothesis experiments"],
     "target_users": "Product managers and engineers at software companies",
-    "value_proposition": "Turn behavioral data into actionable product direction",
+    "value_proposition": "Turn behavioral data into actionable product insight",
     "use_cases": ["Identifying user segments", "Validating hypotheses before shipping", "Prioritizing the roadmap"]
   },
   "context_status": "ready",
@@ -118,16 +115,28 @@ curl https://api.oriyn.ai/products/<product-id> \
   Display name of the product.
 </ResponseField>
 
-<ResponseField name="description" type="string">
-  Optional description of the product. `null` if not set.
-</ResponseField>
-
-<ResponseField name="urls" type="string[]">
-  URLs associated with this product, used for context synthesis. `null` if none are configured.
-</ResponseField>
-
 <ResponseField name="context" type="object">
-  The product's context object. `null` until context has been synthesized or set manually. Shape depends on what was synthesized or provided.
+  The product's structured context object. `null` until context has been synthesized or set manually.
+  <Expandable title="context fields">
+    <ResponseField name="company" type="string" required>
+      Name of the company that owns the product.
+    </ResponseField>
+    <ResponseField name="product_summary" type="string" required>
+      One-paragraph summary of what the product does.
+    </ResponseField>
+    <ResponseField name="core_features" type="string[]" required>
+      Key features of the product.
+    </ResponseField>
+    <ResponseField name="target_users" type="string" required>
+      Description of the people who use the product.
+    </ResponseField>
+    <ResponseField name="value_proposition" type="string" required>
+      The core value the product delivers.
+    </ResponseField>
+    <ResponseField name="use_cases" type="string[]" required>
+      Common scenarios the product is used for.
+    </ResponseField>
+  </Expandable>
 </ResponseField>
 
 <ResponseField name="context_status" type="string" required>
@@ -146,13 +155,13 @@ curl https://api.oriyn.ai/products/<product-id> \
 
 ## Synthesize context
 
-Trigger automatic context synthesis for a product. Oriyn reads the product's associated URLs and builds a context object that powers enrichment.
+Trigger automatic context synthesis for a product. Oriyn reads the product's associated website sources, competitor URLs, uploaded documents (PDF, Markdown), and any free-form knowledge context — and builds a structured context object that powers enrichment.
 
 ```
-POST /products/{id}/context
+POST /v1/products/{id}/context
 ```
 
-This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /products/{id}` and check `context_status` until it is `ready` or `failed`.
+This is an async operation. The endpoint returns `202 Accepted` immediately. Poll `GET /v1/products/{id}` and check `context_status` until it is `ready` or `failed`.
 
 ### Path parameters
 
@@ -168,7 +177,7 @@ If context synthesis is already running for this product, the endpoint returns `
 
 ```bash cURL
 curl --request POST \
-  https://api.oriyn.ai/products/<product-id>/context \
+  https://api.oriyn.ai/v1/products/<product-id>/context \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -185,7 +194,7 @@ After receiving `202`, poll the product to track progress:
 <CodeGroup>
 
 ```bash Poll for status
-curl https://api.oriyn.ai/products/<product-id> \
+curl https://api.oriyn.ai/v1/products/<product-id> \
   --header "Authorization: Bearer <your-token>"
 ```
 
@@ -200,20 +209,24 @@ curl https://api.oriyn.ai/products/<product-id> \
     "product_summary": "Oriyn is a behavioral intelligence platform for product teams.",
     "core_features": ["Behavioral enrichment", "Persona generation", "Hypothesis experiments"],
     "target_users": "Product managers and engineers at software companies",
-    "value_proposition": "Turn behavioral data into actionable product direction",
+    "value_proposition": "Turn behavioral data into actionable product insight",
     "use_cases": ["Identifying user segments", "Validating hypotheses before shipping", "Prioritizing the roadmap"]
   }
 }
 ```
 
+<Note>
+When synthesis succeeds, the API automatically schedules a follow-up enrichment run if the product is ready for it (debounced; gated on whether any data integrations are connected). You can also trigger enrichment manually with [`POST /v1/products/{id}/enrich`](/api-reference/enrichment#trigger-enrichment).
+</Note>
+
 ---
 
 ## Update context manually
 
-Replace or set the product's context with your own JSON object. Use this when you want to provide context directly rather than having Oriyn synthesize it from URLs.
+Replace fields on the product's context with your own values. Use this when you want to provide context directly rather than having Oriyn synthesize it from URLs.
 
 ```
-PATCH /products/{id}/context
+PATCH /v1/products/{id}/context
 ```
 
 ### Path parameters
@@ -224,20 +237,42 @@ PATCH /products/{id}/context
 
 ### Request body
 
-<ParamField body="(any)" type="object" required>
-  A valid JSON object. This replaces the product's context. For best enrichment results, use the same structure that context synthesis produces: `company`, `product_summary`, `core_features`, `target_users`, `value_proposition`, and `use_cases`.
+The body accepts any subset of the structured context fields. Omitted fields are left unchanged.
+
+<ParamField body="company" type="string">
+  Name of the company that owns the product.
+</ParamField>
+
+<ParamField body="product_summary" type="string">
+  One-paragraph summary of what the product does.
+</ParamField>
+
+<ParamField body="core_features" type="string[]">
+  Key features of the product.
+</ParamField>
+
+<ParamField body="target_users" type="string">
+  Description of the people who use the product.
+</ParamField>
+
+<ParamField body="value_proposition" type="string">
+  The core value the product delivers.
+</ParamField>
+
+<ParamField body="use_cases" type="string[]">
+  Common scenarios the product is used for.
 </ParamField>
 
 <CodeGroup>
 
 ```bash cURL
 curl --request PATCH \
-  https://api.oriyn.ai/products/<product-id>/context \
+  https://api.oriyn.ai/v1/products/<product-id>/context \
   --header "Authorization: Bearer <your-token>" \
   --header "Content-Type: application/json" \
   --data '{
-    "summary": "A project management tool for distributed engineering teams.",
-    "audience": "Software engineers and engineering managers",
+    "product_summary": "A project management tool for distributed engineering teams.",
+    "target_users": "Software engineers and engineering managers",
     "core_features": ["task tracking", "sprint planning", "retrospectives"]
   }'
 ```
@@ -246,10 +281,110 @@ curl --request PATCH \
 
 ```json Response
 {
-  "summary": "A project management tool for distributed engineering teams.",
-  "audience": "Software engineers and engineering managers",
+  "product_summary": "A project management tool for distributed engineering teams.",
+  "target_users": "Software engineers and engineering managers",
   "core_features": ["task tracking", "sprint planning", "retrospectives"]
 }
 ```
 
-The response is the updated context object exactly as you provided it.
+The response echoes the fields that were provided. A new `manual` context version is snapshotted automatically; see [List context versions](#list-context-versions).
+
+---
+
+## List context versions
+
+Retrieve the version history for a product's context. Each successful synthesis run and each manual edit is captured as a version.
+
+```
+GET /v1/products/{id}/context/versions
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/v1/products/<product-id>/context/versions \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "versions": [
+    {
+      "id": "9b1c2d3e-4f56-7890-abcd-ef1234567890",
+      "version": 2,
+      "context": {
+        "company": "Oriyn",
+        "product_summary": "Behavioral intelligence platform for product teams.",
+        "core_features": ["Behavioral enrichment", "Persona generation"],
+        "target_users": "Product managers and engineers",
+        "value_proposition": "Turn behavioral data into product insight",
+        "use_cases": ["Identifying user segments"]
+      },
+      "source": "synthesis",
+      "created_at": "2026-01-16T09:30:00Z"
+    }
+  ]
+}
+```
+
+### Response fields
+
+<ResponseField name="versions" type="object[]" required>
+  Array of context version objects, ordered most recent first.
+  <Expandable title="version fields">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the version.
+    </ResponseField>
+    <ResponseField name="version" type="integer" required>
+      Monotonic version number for this product, starting at 1.
+    </ResponseField>
+    <ResponseField name="context" type="object" required>
+      The full context object captured at this version. Same shape as on `GET /v1/products/{id}`.
+    </ResponseField>
+    <ResponseField name="source" type="string" required>
+      How the version was created. One of `synthesis` (auto-generated) or `manual` (PATCH edit).
+    </ResponseField>
+    <ResponseField name="created_at" type="string" required>
+      ISO 8601 timestamp of when the version was captured.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get a context version
+
+Retrieve a single context version by ID.
+
+```
+GET /v1/products/{id}/context/versions/{version_id}
+```
+
+### Path parameters
+
+<ParamField path="id" type="string" required>
+  The product UUID.
+</ParamField>
+
+<ParamField path="version_id" type="string" required>
+  The context version UUID.
+</ParamField>
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.oriyn.ai/v1/products/<product-id>/context/versions/<version-id> \
+  --header "Authorization: Bearer <your-token>"
+```
+
+</CodeGroup>
+
+The response shape matches a single version object from [List context versions](#list-context-versions).

@@ -9,11 +9,11 @@ The Oriyn API is a REST API that gives you programmatic access to your behaviora
 https://api.oriyn.ai
 ```
 
-All requests and responses use JSON. Include `Content-Type: application/json` on any request that sends a body.
+All authenticated endpoints live under the `/v1` prefix. All requests and responses use JSON. Include `Content-Type: application/json` on any request that sends a body.
 
 ## Authentication
 
-Every endpoint (except the health check) requires a Bearer token in the `Authorization` header:
+Every endpoint (except the health check at `/health` and the discovery root at `/v1/`) requires a Bearer token in the `Authorization` header:
 
 ```bash
 Authorization: Bearer <your-token>
@@ -45,16 +45,16 @@ Several operations take time to complete. These endpoints return HTTP `202 Accep
 
 | Endpoint | What it does |
 |---|---|
-| `POST /products/{id}/context` | Synthesizes product context from your URLs |
-| `POST /products/{id}/enrich` | Runs behavioral enrichment (personas, patterns, direction) |
-| `POST /products/{id}/patterns/refresh` | Re-mines behavioral patterns and bottlenecks in the background |
-| `POST /products/{id}/experiments` | Evaluates a hypothesis against your personas |
+| `POST /v1/products/{id}/context` | Synthesizes product context from your URLs, scraped sources, and uploaded documents |
+| `POST /v1/products/{id}/enrich` | Runs behavioral enrichment to generate personas |
+| `POST /v1/products/{id}/hypotheses/refresh` | Re-mines behavioral hypotheses and bottlenecks in the background |
+| `POST /v1/products/{id}/experiments` | Evaluates a hypothesis against your personas |
 
 After receiving a `202`, poll the relevant status field to track progress:
 
-- **Context:** check `context_status` on `GET /products/{id}` — values: `idle`, `processing`, `ready`, `failed`
-- **Enrichment:** check `enrichment_status` on `GET /products/{id}` — values: `idle`, `processing`, `ready`, `failed`
-- **Experiments:** check `status` on `GET /products/{id}/experiments/{experiment_id}` — values: `processing`, `complete`, `failed`
+- **Context:** check `context_status` on `GET /v1/products/{id}` — values: `idle`, `processing`, `ready`, `failed`
+- **Enrichment:** check `enrichment_status` on `GET /v1/products/{id}` — values: `idle`, `processing`, `ready`, `failed`
+- **Experiments:** check `status` on `GET /v1/products/{id}/experiments/{experiment_id}` — values: `processing`, `complete`, `failed`
 
 <Tip>
 Poll at a reasonable interval — every 2–5 seconds is sufficient for most operations. Avoid tight loops with no delay.
@@ -66,13 +66,13 @@ All error responses use standard HTTP status codes and return a JSON body descri
 
 | Status | Meaning |
 |---|---|
-| `400 Bad Request` | Invalid input or a precondition is not met (e.g., enrichment has not been run yet) |
-| `401 Unauthorized` | Missing or invalid Bearer token |
+| `400 Bad Request` | Invalid input (e.g., source URL must use `https://`) |
+| `401 Unauthorized` | Missing or invalid Bearer token, or no active organization on the token |
 | `402 Payment Required` | Insufficient credits to complete the operation |
 | `403 Forbidden` | Your token is valid but you don't have access to this resource, or you've exceeded a plan limit |
 | `404 Not Found` | The resource doesn't exist or doesn't belong to your organization |
 | `409 Conflict` | The operation is already in progress (e.g., enrichment is already running) |
-| `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state |
+| `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state (e.g., enrichment requested before context is ready) |
 
 ## Authorization errors
 
@@ -99,6 +99,10 @@ Each organization member has one of four roles. The role determines which permis
 
 Endpoint reference pages call out the specific permission each mutating endpoint requires. Members and roles are managed in the [Oriyn web app](https://app.oriyn.ai); the API is not the source of truth for membership.
 
+## Discovering the API
+
+The API exposes a self-describing root at `GET /v1/` that returns a curated, LLM-friendly summary of every resource and a link to the full OpenAPI spec at `/openapi.json`. This endpoint is unauthenticated by design — discovery should not require a key.
+
 ## Explore the API
 
 <CardGroup cols={2}>
@@ -109,12 +113,12 @@ Endpoint reference pages call out the specific permission each mutating endpoint
     Create and manage products, synthesize context.
   </Card>
   <Card title="Enrichment" icon="sparkles" href="/api-reference/enrichment">
-    Run enrichment and retrieve personas, patterns, and direction.
+    Run enrichment and retrieve personas, hypotheses, and bottlenecks.
   </Card>
   <Card title="Experiments" icon="flask-conical" href="/api-reference/experiments">
     Submit hypotheses and evaluate them against your personas.
   </Card>
   <Card title="Integrations" icon="plug" href="/api-reference/integrations">
-    List providers and manage data source connections.
+    Manage data source connections.
   </Card>
 </CardGroup>

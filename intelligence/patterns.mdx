@@ -1,29 +1,33 @@
 ---
-title: "Behavioral patterns from PostHog event data"
-description: "Discover 3–7 recurring user workflows extracted from PostHog event data per enrichment run, including raw event sequences, frequency, and significance."
+title: "Behavioral hypotheses from event data"
+description: "Discover testable behavioral sequences mined from cross-provider event data per enrichment run, including raw event sequences, frequency, user counts, and significance."
 ---
 
-Oriyn scans your PostHog event data and extracts 3–7 recurring behavioral sequences per enrichment run. These are patterns that appear consistently across users: multi-step flows that users repeat, paths that lead to core actions, and sequences that end in drop-off. Unlike personas, which describe segments of users, patterns describe what users *do*.
+Oriyn mines recurring behavioral sequences from your cross-provider event data and surfaces them as **hypotheses** — testable sequences that appear consistently across users. These are multi-step flows that users repeat, paths that lead to core actions, and sequences that end in drop-off. Unlike personas, which describe segments of users, hypotheses describe what users *do*.
 
-## What a pattern contains
+<Note>
+The API field this resource was previously called "patterns" is now exposed as `hypotheses`. Existing documentation may reference the older name; the canonical endpoint is `GET /v1/products/{id}/hypotheses`. See the [Enrichment API reference](/api-reference/enrichment#get-hypotheses) for the full schema.
+</Note>
 
-Each pattern includes:
+## What a hypothesis contains
 
-- **`title`** — a short name for the pattern (e.g., "Import-then-abandon", "Explore before commit")
-- **`description`** — what users do in this sequence and why it matters for your product
-- **`raw_sequence`** — an ordered list of steps that define the pattern, derived from real event data
-- **`frequency`** — how often this pattern appears across your user base
-- **`significance`** — a plain-language explanation of what this pattern means for product decisions
-- **`generated_at`** — the timestamp for when this pattern was generated
+Each hypothesis includes:
 
-The `raw_sequence` is the most precise part of the pattern. It shows the actual ordered steps users take, in the order they take them, so you can trace the behavior back to specific parts of your product.
+- **`sequence`** — the ordered list of raw activity names that define the behavior, derived from real event data
+- **`rendered_sequence`** — the same activities rendered as human-readable labels
+- **`frequency`** — total number of times this sequence was observed across all users in the mined window
+- **`user_count`** — number of distinct users who exhibited the sequence
+- **`significance_pct`** — significance score, expressed as a percentage of the user population
+- **`source_users`** — sample of resolved user identifiers that exhibited the sequence — useful for seeding experiments or drilling into a cohort
 
-## Retrieve patterns
+The `sequence` is the most precise part of the hypothesis. It shows the actual ordered steps users take, in the order they take them, so you can trace the behavior back to specific parts of your product.
+
+## Retrieve hypotheses
 
 ### API
 
 ```bash
-curl https://api.oriyn.ai/products/{product_id}/patterns \
+curl https://api.oriyn.ai/v1/products/{product_id}/hypotheses \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -34,57 +38,52 @@ curl https://api.oriyn.ai/products/{product_id}/patterns \
   "enrichment_status": "ready",
   "data": [
     {
-      "id": "c2e4a3f1-4d3a-88b0-9e7f-3e4f5a6b1c2d",
-      "title": "Template Browse Without Create",
-      "description": "Users open and preview multiple templates but exit without creating anything. This pattern is common in early sessions and often precedes churn when not followed by a successful creation event.",
-      "frequency": "Observed in 58% of new user sessions within the first 7 days",
-      "significance": "A large share of new users are browsing for guidance but not finding a clear entry point. This is a signal that the template-to-creation handoff is too passive.",
-      "raw_sequence": [
-        "viewed_templates_gallery",
-        "previewed_template",
-        "previewed_template",
-        "previewed_template",
-        "exited_without_action"
-      ],
-      "generated_at": "2026-04-01T14:32:00Z"
-    },
-    {
-      "id": "d9f1b7e4-4b8c-23a6-ae12-9d2e1b0a7f3c",
-      "title": "Integration Setup Loop",
-      "description": "Users start the integration setup flow, reach the credentials step, and then navigate away — returning to retry an average of 2.4 times before either completing or abandoning the flow entirely.",
-      "frequency": "Appears in 41% of integration setup attempts",
-      "significance": "Repeated re-entry into the same setup step suggests a usability problem: users aren't sure what credentials are needed or where to find them. This is a high-leverage friction point.",
-      "raw_sequence": [
+      "sequence": [
         "started_integration_setup",
         "reached_credentials_step",
         "navigated_away",
         "returned_to_integration_setup",
         "reached_credentials_step"
       ],
-      "generated_at": "2026-04-01T14:32:00Z"
+      "rendered_sequence": [
+        "Started integration setup",
+        "Reached credentials step",
+        "Navigated away",
+        "Returned to integration setup",
+        "Reached credentials step"
+      ],
+      "frequency": 412,
+      "user_count": 287,
+      "significance_pct": 18.4,
+      "source_users": [
+        "user_01H8ZK3P...",
+        "user_01H92YTM..."
+      ]
     }
   ]
 }
 ```
 
+To trigger a fresh mining pass before reading, call `POST /v1/products/{product_id}/hypotheses/refresh`. See [Refresh hypotheses](/api-reference/enrichment#refresh-hypotheses).
+
 ### CLI
 
 ```bash
-oriyn patterns --product-id <product_id>
+oriyn hypotheses --product-id <product_id>
 ```
 
 Add `--json` to get the raw JSON response:
 
 ```bash
-oriyn patterns --product-id <product_id> --json
+oriyn hypotheses --product-id <product_id> --json
 ```
 
 ## Typical use cases
 
-**Discovering unmapped workflows.** Users often find paths through your product that you didn't explicitly design. Patterns surface these so you can understand, support, or redirect them.
+**Discovering unmapped workflows.** Users often find paths through your product that you didn't explicitly design. Hypotheses surface these so you can understand, support, or redirect them.
 
-**Spotting drop-off sequences.** If a pattern consistently ends before a conversion event, that's a structured description of where users are falling off — and what led them there.
+**Spotting drop-off sequences.** If a sequence consistently ends before a conversion event, that's a structured description of where users are falling off — and what led them there.
 
-**Prioritizing friction to fix.** When a pattern is both frequent and ends in drop-off, it represents concentrated, addressable loss. The `significance` field gives you a starting interpretation, but the `raw_sequence` lets you verify it against your own product knowledge.
+**Prioritizing friction to fix.** When a sequence is both frequent and ends in drop-off, it represents concentrated, addressable loss. Use `source_users` to seed an experiment that tests a fix against the exact cohort that exhibited the behavior.
 
-Patterns update each time enrichment runs. Re-running enrichment after a product change will reflect whether the behavioral sequence has shifted.
+Hypotheses update each time the pattern-miner runs. Re-running mining after a product change will reflect whether the behavioral sequence has shifted.
