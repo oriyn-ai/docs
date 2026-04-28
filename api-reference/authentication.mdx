@@ -52,9 +52,9 @@ To get a new token:
 
 ## Active organization requirement
 
-Every authenticated request is evaluated against your **currently active organization**. The token must include an active org claim and the role attached to that org — without one, the API returns `401 Unauthorized` even though the token is otherwise valid. If you see this error, switch to (or create) an organization in the [web app](https://app.oriyn.ai) and re-issue your token.
+Every authenticated request is evaluated against your **currently active organization**. The token must include an active org claim — without one, the API returns `401 Unauthorized` even though the token is otherwise valid. If you see this error, switch to (or create) an organization in the [web app](https://app.oriyn.ai) and re-issue your token.
 
-Permissions are checked against the same active organization. See [authorization errors](/api-reference/overview#authorization-errors) for the role-to-permission mapping.
+Resources are scoped to the active organization on the token. Requests for products, experiments, or billing data that belong to a different organization return `403 Forbidden`.
 
 <Note>
 Store your token securely. Do not commit it to version control or expose it in client-side code. Use environment variables or a secrets manager in production.
@@ -65,4 +65,4 @@ Store your token securely. Do not commit it to version control or expose it in c
 | Status | Meaning |
 |---|---|
 | `401 Unauthorized` | Your token is missing, malformed, expired, or does not include an active organization. Check that you're passing the `Authorization: Bearer <token>` header correctly, refresh your token if needed, and confirm you have an active org selected in the web app. |
-| `403 Forbidden` | Your token is valid, but you don't have permission to access this resource. Either the resource belongs to a different organization, or your role on the organization does not grant the required permission. See [authorization errors](/api-reference/overview#authorization-errors) for the response body. |
+| `403 Forbidden` | Your token is valid, but the resource belongs to a different organization than the one active on your token. Switch to the correct organization in the [web app](https://app.oriyn.ai) and re-issue your token. |
