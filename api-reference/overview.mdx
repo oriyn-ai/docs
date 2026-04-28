@@ -69,35 +69,12 @@ All error responses use standard HTTP status codes and return a JSON body descri
 | `400 Bad Request` | Invalid input or a precondition is not met (e.g., enrichment has not been run yet) |
 | `401 Unauthorized` | Missing or invalid Bearer token |
 | `402 Payment Required` | Insufficient credits to complete the operation |
-| `403 Forbidden` | Your token is valid but you don't have access to this resource, or you've exceeded a plan limit |
+| `403 Forbidden` | Your token is valid but the resource belongs to a different organization, or you've exceeded a plan limit |
 | `404 Not Found` | The resource doesn't exist or doesn't belong to your organization |
 | `409 Conflict` | The operation is already in progress (e.g., enrichment is already running) |
 | `422 Unprocessable Entity` | The request is well-formed but cannot be processed in the current state |
 
-## Authorization errors
-
-Some endpoints require a specific permission on the organization that owns the resource. Permissions are read from the caller's session token, which is issued for the user's currently active organization. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
-
-```json 403 — missing permission
-{
-  "error": "this action requires `org:content:write`",
-  "required_permission": "org:content:write",
-  "role": "org:viewer"
-}
-```
-
-If the caller's session token does not include any active organization (for example, the user has not yet selected an org), the API returns `401 Unauthorized` instead. The frontend should redirect to onboarding to complete org setup.
-
-### Roles and permissions
-
-Each organization member has one of four roles. The role determines which permissions they hold. Both roles and permissions are scoped under the `org:` namespace:
-
-| Permission | `org:owner` | `org:admin` | `org:member` | `org:viewer` |
-|---|:-:|:-:|:-:|:-:|
-| `org:content:write` — create and modify products, experiments | Yes | Yes | Yes | — |
-| `org:sys_billing:manage` — manage subscription, cards, and credit purchases | Yes | — | — | — |
-
-Endpoint reference pages call out the specific permission each mutating endpoint requires. Members and roles are managed in the [Oriyn web app](https://app.oriyn.ai); the API is not the source of truth for membership.
+If the caller's session token does not include any active organization (for example, the user has not yet selected an org), the API returns `401 Unauthorized`. The frontend should redirect to onboarding to complete org setup. Members and active organizations are managed in the [Oriyn web app](https://app.oriyn.ai); the API is not the source of truth for membership.
 
 ## Explore the API
 
