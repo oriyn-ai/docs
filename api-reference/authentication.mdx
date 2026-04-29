@@ -1,21 +1,21 @@
 ---
 title: "API authentication with Bearer tokens"
-description: "Obtain a JWT Bearer token through OAuth and authenticate your requests to the Oriyn REST API. Includes header format and CLI shortcut."
+description: "Obtain an OAuth 2.0 access token and authenticate your requests to the Oriyn REST API. Includes header format and CLI shortcut."
 ---
 
-The Oriyn API uses Bearer token authentication. You must include a valid token on every request except the health check endpoint.
+The Oriyn API uses Bearer token authentication. You must include a valid OAuth 2.0 access token on every request except the health check endpoint.
 
 ## Getting a token
 
-Oriyn uses JWTs issued through a browser-based OAuth flow. You can obtain a token in two ways:
+Oriyn issues OAuth 2.0 access tokens through a standard browser-based authorization-code flow with PKCE. You can obtain a token in two ways:
 
-**From the CLI:** Run the following command and complete the browser login. The CLI stores your token in your OS keychain and uses it automatically for all CLI commands.
+**From the CLI:** Run the following command and complete the browser login. The CLI stores your access token (and a refresh token) in your OS keychain and uses them automatically for all CLI commands, refreshing on expiry.
 
 ```bash
 oriyn login
 ```
 
-**From the web app:** Log in at [app.oriyn.ai](https://app.oriyn.ai). Your session token can be retrieved from your browser's local session for use in direct API calls during development.
+**From the web app:** Log in at [app.oriyn.ai](https://app.oriyn.ai). The web app uses a session cookie rather than a Bearer token; for direct API calls during development, use the CLI to obtain an access token.
 
 ## Using your token
 
@@ -43,16 +43,18 @@ curl https://api.oriyn.ai/v1/me \
 
 ## Token expiry and refresh
 
-Tokens are short-lived JWTs and expire automatically. When your token expires, requests will return `401 Unauthorized`.
+Access tokens are short-lived (approximately one hour) and expire automatically. When your token expires, requests will return `401 Unauthorized`.
 
 To get a new token:
 
 - **Web app:** Log in again at [app.oriyn.ai](https://app.oriyn.ai).
-- **CLI:** Run `oriyn login` again.
+- **CLI:** The CLI refreshes tokens automatically using its stored refresh token. If refresh fails (for example, the refresh token has been revoked), run `oriyn login` again.
 
 ## Active organization requirement
 
-Every authenticated request is evaluated against your **currently active organization**. The token must include an active org claim and the role attached to that org — without one, the API returns `401 Unauthorized` even though the token is otherwise valid. If you see this error, switch to (or create) an organization in the [web app](https://app.oriyn.ai) and re-issue your token.
+Every authenticated request is evaluated against your **currently active organization**. Organization membership is resolved on the server when your token is validated — you do not need to re-issue the token after switching organizations, but membership and role changes can take up to one minute to take effect due to per-user caching.
+
+If your account has no organization membership, the API returns `401 Unauthorized` even though the token is otherwise valid. Create or join an organization in the [web app](https://app.oriyn.ai) before calling the API.
 
 Permissions are checked against the same active organization. See [authorization errors](/api-reference/overview#authorization-errors) for the role-to-permission mapping.
 
@@ -64,5 +66,5 @@ Store your token securely. Do not commit it to version control or expose it in c
 
 | Status | Meaning |
 |---|---|
-| `401 Unauthorized` | Your token is missing, malformed, expired, or does not include an active organization. Check that you're passing the `Authorization: Bearer <token>` header correctly, refresh your token if needed, and confirm you have an active org selected in the web app. |
+| `401 Unauthorized` | Your token is missing, malformed, or expired, or your account has no organization membership. Check that you're passing the `Authorization: Bearer <token>` header correctly, refresh your token if needed, and confirm you have an active org in the web app. |
 | `403 Forbidden` | Your token is valid, but you don't have permission to access this resource. Either the resource belongs to a different organization, or your role on the organization does not grant the required permission. See [authorization errors](/api-reference/overview#authorization-errors) for the response body. |
