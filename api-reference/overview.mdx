@@ -67,7 +67,7 @@ All error responses use standard HTTP status codes and return a JSON body descri
 | Status | Meaning |
 |---|---|
 | `400 Bad Request` | Invalid input (e.g., source URL must use `https://`) |
-| `401 Unauthorized` | Missing or invalid Bearer token, or no active organization on the token |
+| `401 Unauthorized` | Missing or invalid Bearer token, or the authenticated user has no active organization |
 | `402 Payment Required` | Insufficient credits to complete the operation |
 | `403 Forbidden` | Your token is valid but you don't have access to this resource, or you've exceeded a plan limit |
 | `404 Not Found` | The resource doesn't exist or doesn't belong to your organization |
@@ -76,7 +76,7 @@ All error responses use standard HTTP status codes and return a JSON body descri
 
 ## Authorization errors
 
-Some endpoints require a specific permission on the organization that owns the resource. Permissions are read from the caller's session token, which is issued for the user's currently active organization. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
+Some endpoints require a specific permission on the organization that owns the resource. The caller's role on their currently active organization is resolved when the token is validated, and permissions are derived from that role. When the caller is authenticated but their role does not grant the required permission, the API returns `403 Forbidden` with a structured body:
 
 ```json 403 — missing permission
 {
@@ -86,7 +86,7 @@ Some endpoints require a specific permission on the organization that owns the r
 }
 ```
 
-If the caller's session token does not include any active organization (for example, the user has not yet selected an org), the API returns `401 Unauthorized` instead. The frontend should redirect to onboarding to complete org setup.
+If the caller has no organization membership (for example, the user has not yet completed onboarding), the API returns `401 Unauthorized` instead. The frontend should redirect to onboarding to complete org setup.
 
 ### Roles and permissions
 
